@@ -2,12 +2,47 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Capacitor } from "@capacitor/core";
 import { Geolocation } from "@capacitor/geolocation";
 import { AlertCircle, Clock, MapPin, Phone, RefreshCw } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { formatDistance } from "@/lib/geo";
+import { HospitalLookupError, fetchHospitals } from "@/lib/hospitals";
 
 const SEARCH_RADIUS_M = 2000;
+
+/**
+ * 앱에서는 서버 없이 공공데이터 API를 직접 부른다.
+ * CapacitorHttp가 fetch를 네이티브로 보내므로 CORS에 막히지 않는다.
+ * 브라우저는 CORS 때문에 직접 부를 수 없어 /api/hospitals 프록시를 거친다.
+ */
+async function lookupHospitals({ lat, lng, radius }) {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      return await fetchHospitals({
+        lat,
+        lng,
+        radius,
+        serviceKey: process.env.NEXT_PUBLIC_DATA_GO_KR_SERVICE_KEY,
+      });
+    } catch (error) {
+      if (error instanceof HospitalLookupError) {
+        return { error: error.code, message: error.message };
+      }
+      throw error;
+    }
+  }
+
+  const query = new URLSearchParams({
+    lat: String(lat),
+    lng: String(lng),
+    radius: String(radius),
+  });
+  const res = await fetch(apiUrl(`/api/hospitals?${query}`));
+  const data = await res.json();
+
+  return res.ok ? data : { error: data.error ?? "unknown", message: data.message };
+}
 
 export default function HospitalListContent() {
   const searchParams = useSearchParams();
@@ -55,16 +90,14 @@ export default function HospitalListContent() {
     }
 
     try {
-      const query = new URLSearchParams({
-        lat: String(coords.lat),
-        lng: String(coords.lng),
-        radius: String(SEARCH_RADIUS_M),
+      const data = await lookupHospitals({
+        lat: coords.lat,
+        lng: coords.lng,
+        radius: SEARCH_RADIUS_M,
       });
-      const res = await fetch(apiUrl(`/api/hospitals?${query}`));
-      const data = await res.json();
 
-      if (!res.ok) {
-        setError({ kind: data.error ?? "unknown", message: data.message });
+      if (data.error) {
+        setError({ kind: data.error, message: data.message });
         return;
       }
 
