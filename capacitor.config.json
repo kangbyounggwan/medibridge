@@ -1,0 +1,13 @@
+{
+  "appId": "kr.co.medibridge.app",
+  "appName": "MediBridge",
+  "webDir": "out-mobile",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
+    "EdgeToEdge": {
+      "backgroundColor": "#ffffff"
+    }
+  }
+}

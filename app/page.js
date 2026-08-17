@@ -1,87 +1,121 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
+import { ArrowRight, FileText, Hospital, Stethoscope } from "lucide-react";
 import mainImg from "@/public/service_sample.png";
 
-import Image from "next/image";
+const fadeUp = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+};
 
 export default function Home() {
   return (
-    <main>
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-6 py-12 gap-8">
-        {/* 상단 타이틀 */}
-        <motion.h1
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-4xl sm:text-5xl font-extrabold text-gray-800 text-center"
-        >
-          한국거주 외국인들을 위한{" "}
+    <div className="mx-auto w-full max-w-4xl px-5 pt-6 pb-10 md:px-6 md:pt-12">
+      {/* 타이틀 */}
+      <motion.div
+        {...fadeUp}
+        transition={{ duration: 0.45 }}
+        className="md:text-center"
+      >
+        <h2 className="text-2xl font-extrabold leading-snug text-gray-800 md:text-5xl">
+          한국거주 외국인들을 위한
+          <br />
           <span className="text-blue-500">AI 병원</span> 연결 플랫폼
-          {/* 개원 입지 분석 및ALL-IN-ONE</span>{" "}
-          병원 마케팅 */}
-        </motion.h1>
-
-        {/* 설명 텍스트 */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-          className="text-lg sm:text-xl text-gray-600 text-center"
-        >
+        </h2>
+        <p className="mt-2 text-sm text-gray-500 md:mt-4 md:text-xl">
           AI-based Hospital Linking Platform for Foreigners in Korea,{" "}
           <span className="font-semibold text-green-500">MediBridge</span>
-        </motion.p>
+        </p>
+      </motion.div>
 
-        {/* CTA 버튼 */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="flex flex-col sm:flex-row gap-4 mt-6"
+      {/* 주 액션 */}
+      <motion.div
+        {...fadeUp}
+        transition={{ duration: 0.45, delay: 0.1 }}
+        className="mt-7 md:mt-10"
+      >
+        <Link
+          href="/chat"
+          className="flex items-center gap-4 rounded-2xl bg-blue-500 p-5 text-white shadow-lg shadow-blue-500/20 transition active:scale-[0.99] md:justify-center"
         >
-          <Link
-            href="/analysis"
-            className="px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-lg font-semibold transition"
-          >
-            월간 병원 레포트 확인하기
-          </Link>
-          <Link
-            href="/chat"
-            className="px-8 py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl text-lg font-semibold transition"
-          >
-            환자 상담 체험
-          </Link>
-        </motion.div>
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20">
+            <Stethoscope size={26} aria-hidden="true" />
+          </span>
+          <span className="flex-1 md:flex-none">
+            <span className="block text-lg font-bold">AI 상담 시작하기</span>
+            <span className="mt-0.5 block text-sm text-blue-50">
+              증상을 입력하면 AI가 안내해 드려요
+            </span>
+          </span>
+          <ArrowRight size={20} aria-hidden="true" className="shrink-0" />
+        </Link>
+      </motion.div>
 
-        {/* 이미지/서비스 섹션 */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.9 }}
-          className="mt-12 w-full max-w-4xl flex flex-col justify-center"
+      {/* 보조 액션 */}
+      <motion.div
+        {...fadeUp}
+        transition={{ duration: 0.45, delay: 0.18 }}
+        className="mt-3 grid grid-cols-2 gap-3"
+      >
+        <Link
+          href="/hospitalList"
+          className="rounded-2xl border border-gray-200 bg-white p-4 transition active:scale-[0.99] active:bg-gray-50"
         >
-          <Image src={mainImg} alt="메디브릿지 서비스" className="w-full" />
-        </motion.div>
-      </div>
-      <div className="w-full bg-blue-400">
-        <div className="container m-auto flex flex-col items-center text-center p-10 gap-5">
-          <p className="text-white text-2xl font-bold">
-            남들보다 앞서나가는 병원만들기,
-            <br />
-            5분 상담을 통해 지금 바로 시작해보세요!
-          </p>
-          <Link
-            href="https://naver.me/G8hId90X"
-            target="_blank"
-            alt="신청 폼 바로가기"
-            className="px-8 py-3 bg-white hover:bg-blue-600 transition hover:text-white text-blue-500 rounded-xl text-lg font-semibold transition"
-          >
-            상담 신청 하기 &#8640;
-          </Link>
-        </div>
-      </div>
-    </main>
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50 text-green-600">
+            <Hospital size={22} aria-hidden="true" />
+          </span>
+          <span className="mt-3 block font-bold text-gray-800">병원 찾기</span>
+          <span className="mt-0.5 block text-xs text-gray-500">
+            내 주변 병원 목록
+          </span>
+        </Link>
+
+        <Link
+          href="/analysis"
+          className="rounded-2xl border border-gray-200 bg-white p-4 transition active:scale-[0.99] active:bg-gray-50"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+            <FileText size={22} aria-hidden="true" />
+          </span>
+          <span className="mt-3 block font-bold text-gray-800">월간 리포트</span>
+          <span className="mt-0.5 block text-xs text-gray-500">
+            병원 분석 레포트
+          </span>
+        </Link>
+      </motion.div>
+
+      {/* 서비스 소개 이미지 — 앱 안에서 앱 스크린샷은 군더더기라 데스크톱에서만 */}
+      <motion.div
+        {...fadeUp}
+        transition={{ duration: 0.5, delay: 0.25 }}
+        className="mt-12 hidden md:block"
+      >
+        <Image src={mainImg} alt="메디브릿지 서비스 소개" className="w-full" />
+      </motion.div>
+
+      {/* 상담 신청 */}
+      <motion.div
+        {...fadeUp}
+        transition={{ duration: 0.45, delay: 0.3 }}
+        className="mt-8 rounded-2xl bg-blue-400 p-5 text-center md:mt-14 md:p-10"
+      >
+        <p className="text-base font-bold leading-relaxed text-white md:text-2xl">
+          남들보다 앞서나가는 병원만들기,
+          <br />
+          5분 상담을 통해 지금 바로 시작해보세요!
+        </p>
+        <a
+          href="https://naver.me/G8hId90X"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 inline-block rounded-xl bg-white px-6 py-3 font-semibold text-blue-500 transition active:scale-[0.99] md:hover:bg-blue-600 md:hover:text-white"
+        >
+          상담 신청 하기 &#8640;
+        </a>
+      </motion.div>
+    </div>
   );
 }

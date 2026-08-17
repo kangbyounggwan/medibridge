@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import icoKakao from "@/public/ico-kakao.png";
 import Image from "next/image";
+import { Send } from "lucide-react";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -52,7 +53,16 @@ export default function HospitalChatContent() {
     },
   };
 
-  const currentHospital = hospitalInfo[hospitalId] || hospitalInfo[1];
+  // 심평원 데이터로 넘어온 병원은 위 데모 테이블에 없다.
+  // 목록에서 전달된 값을 우선 쓰고, 데모 병원일 때만 상세 정보를 채운다.
+  const demo = hospitalInfo[hospitalId];
+  const currentHospital = {
+    name: hospitalName || demo?.name || "병원",
+    type: hospitalType || "",
+    doctor: demo?.doctor ?? null,
+    specialties: demo?.specialties ?? [],
+    workingHours: demo?.workingHours ?? null,
+  };
 
   // FAQ 응답
   const faqResponses = {
@@ -69,26 +79,37 @@ export default function HospitalChatContent() {
   useEffect(() => {
     if (!hospitalId) return;
 
+    const lines = [`안녕하세요! ${currentHospital.name}입니다.`];
+
+    if (currentHospital.specialties.length > 0) {
+      lines.push(
+        `저희는 ${currentHospital.specialties.join(", ")} 분야를 전문으로 하고 있습니다.`
+      );
+    } else if (currentHospital.type) {
+      lines.push(`저희는 ${currentHospital.type}입니다.`);
+    }
+
+    if (currentHospital.doctor) {
+      lines.push(`${currentHospital.doctor}이 진료를 담당하고 있습니다.`);
+    }
+    if (currentHospital.workingHours) {
+      lines.push(`진료시간: ${currentHospital.workingHours}`);
+    }
+    if (symptoms) {
+      lines.push(`AI 상담을 통해 "${symptoms}" 증상으로 방문해주시는군요.`);
+    }
+    lines.push("궁금한 점이 있으시면 언제든 문의해주세요!");
+
     const welcomeMessage = {
       type: "hospital",
-      content: `안녕하세요! ${
-        currentHospital.name
-      }입니다.\n\n저희는 ${currentHospital.specialties.join(
-        ", "
-      )} 분야를 전문으로 하고 있으며, ${
-        currentHospital.doctor
-      }이 진료를 담당하고 있습니다。\n\n진료시간: ${
-        currentHospital.workingHours
-      }\n\n${
-        symptoms
-          ? `AI 상담을 통해 "${symptoms}" 증상으로 방문해주시는군요.`
-          : ""
-      }\n\n궁금한 점이 있으시면 언제든 문의해주세요!`,
+      content: lines.join("\n\n"),
       timestamp: new Date(),
     };
 
     setMessages([welcomeMessage]);
-  }, [hospitalId, symptoms]);
+    // currentHospital은 아래 값들에서 파생되므로 이 넷이 실제 의존성이다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hospitalId, hospitalName, hospitalType, symptoms]);
 
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return;
@@ -121,100 +142,159 @@ export default function HospitalChatContent() {
     }, 800);
   };
 
-  if (!hospitalId || !hospitalInfo[hospitalId]) {
-    return <div className="p-5">Invalid hospital ID or loading...</div>;
+
+  const formatTime = (date) =>
+    date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+
+  // 실제 심평원 병원은 위 데모 테이블에 없으므로 id만 있으면 화면을 그린다.
+  if (!hospitalId) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center px-6 text-center text-sm text-gray-500">
+        병원 정보를 불러오는 중입니다...
+      </div>
+    );
   }
 
+  const subtitle = [currentHospital.type, currentHospital.doctor]
+    .filter(Boolean)
+    .join(" · ");
+
+  const lastMessage = messages[messages.length - 1];
+  const offersReservation =
+    lastMessage?.type === "hospital" &&
+    lastMessage.content.includes("예약 도와드릴까요") &&
+    !showReservationButton;
+
   return (
-    <div className="max-w-2xl mx-auto p-4 font-sans h-full flex flex-col">
-      <header className="bg-blue-500 text-white p-5 rounded-t-xl">
-        <h1 className="text-xl font-bold mb-1">
-          💬 {currentHospital.name} 상담
-        </h1>
-        <p className="text-sm opacity-90">
-          {currentHospital.doctor} | {hospitalType}
-        </p>
-        <div className="text-xs opacity-80 mt-1">
-          전문분야: {currentHospital.specialties.join(" · ")}
-        </div>
+    <div className="screen-fill mx-auto flex w-full max-w-2xl flex-col">
+      {/* 병원 요약 */}
+      <header className="border-b border-gray-200 bg-white px-5 py-3">
+        <h2 className="font-bold text-gray-800">{currentHospital.name}</h2>
+        {subtitle && <p className="mt-0.5 text-xs text-gray-500">{subtitle}</p>}
+        {currentHospital.specialties.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {currentHospital.specialties.map((item) => (
+              <span
+                key={item}
+                className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        )}
       </header>
 
-      <div className="flex-1 bg-gray-50 p-5 border border-gray-200 overflow-y-auto">
-        {messages.map((message, idx) => (
-          <div
-            key={idx}
-            className={`mb-4 flex ${
-              message.type === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
-            <div
-              className={`max-w-[70%] p-3 rounded-lg whitespace-pre-wrap text-sm ${
-                message.type === "user"
-                  ? "bg-blue-500 text-white rounded-br-none"
-                  : "bg-white text-gray-800 rounded-bl-none border border-gray-200"
-              }`}
-            >
-              {message.content}
-              <div className="text-[10px] mt-2 opacity-70 text-right">
-                {message.timestamp.toLocaleTimeString()}
-              </div>
-            </div>
-          </div>
-        ))}
+      {/* 대화 */}
+      <div className="flex-1 overflow-y-auto bg-gray-50 px-4 py-4">
+        <ul className="flex flex-col gap-3">
+          {messages.map((message, idx) => {
+            const mine = message.type === "user";
+            return (
+              <li
+                key={idx}
+                className={`flex ${mine ? "justify-end" : "justify-start"}`}
+              >
+                <div className={`max-w-[80%] ${mine ? "items-end" : "items-start"} flex flex-col gap-1`}>
+                  <div
+                    className={`whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                      mine
+                        ? "rounded-br-md bg-blue-500 text-white"
+                        : "rounded-bl-md border border-gray-200 bg-white text-gray-800"
+                    }`}
+                  >
+                    {message.content}
+                  </div>
+                  <time className="px-1 text-[11px] text-gray-400">
+                    {formatTime(message.timestamp)}
+                  </time>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
 
         {loading && (
-          <div className="flex justify-start mb-4">
-            <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <div className="flex gap-1">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-blue-500 rounded-full delay-200 animate-bounce"></div>
-                <div className="w-2 h-2 bg-blue-500 rounded-full delay-400 animate-bounce"></div>
-              </div>
+          <div className="mt-3 flex justify-start">
+            <div className="flex gap-1 rounded-2xl rounded-bl-md border border-gray-200 bg-white px-4 py-3">
+              <span className="h-2 w-2 animate-bounce rounded-full bg-blue-400" />
+              <span className="h-2 w-2 animate-bounce rounded-full bg-blue-400 [animation-delay:150ms]" />
+              <span className="h-2 w-2 animate-bounce rounded-full bg-blue-400 [animation-delay:300ms]" />
             </div>
           </div>
         )}
 
-        {messages.length > 0 &&
-          messages[messages.length - 1].type === "hospital" &&
-          messages[messages.length - 1].content.includes("예약 도와드릴까요") &&
-          !showReservationButton && (
-            <div className="flex justify-center mt-4">
-              <button
-                onClick={() => setShowReservationUI(true)}
-                className="cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-600"
-              >
-                네, 예약할게요
-              </button>
-            </div>
-          )}
+        {offersReservation && (
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setShowReservationUI(true)}
+              className="rounded-xl bg-blue-500 px-5 py-2.5 text-sm font-bold text-white active:scale-[0.99]"
+            >
+              네, 예약할게요
+            </button>
+          </div>
+        )}
 
         {showKakaoButton && (
-          <div className="flex justify-center mt-4">
+          <div className="mt-4 flex justify-center">
             <button
+              type="button"
               onClick={() => alert("카톡 알림이 설정되었습니다!")}
-              className="cursor-pointer bg-[#fee500] text-black px-4 py-2 rounded-lg font-bold hover:bg-[#FFD700] flex flex-wrap gap-1 items-center"
+              className="flex items-center gap-1.5 rounded-xl bg-[#fee500] px-5 py-2.5 text-sm font-bold text-black active:scale-[0.99]"
             >
-              <Image src={icoKakao} width={20} height={10} alt="ico-kakao" />{" "}
-              <span>카톡으로 알림받기</span>
+              <Image src={icoKakao} width={18} height={18} alt="" aria-hidden="true" />
+              카톡으로 알림받기
             </button>
           </div>
         )}
       </div>
 
+      {/* 입력 */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSendMessage();
+        }}
+        className="flex gap-2 border-t border-gray-200 bg-white p-3"
+      >
+        <input
+          type="text"
+          value={inputMessage}
+          onChange={(e) => setInputMessage(e.target.value)}
+          placeholder="궁금한 점을 입력해주세요..."
+          aria-label="메시지 입력"
+          className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
+        <button
+          type="submit"
+          disabled={loading || !inputMessage.trim()}
+          aria-label="전송"
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white transition ${
+            loading || !inputMessage.trim()
+              ? "bg-gray-300"
+              : "bg-blue-500 active:scale-[0.97]"
+          }`}
+        >
+          <Send size={18} aria-hidden="true" />
+        </button>
+      </form>
+
+      {/* 예약 */}
       {showReservationUI && (
-        <div className="fixed inset-0 bg-[#00000082] bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 relative z-60">
-            <h3 className="text-lg font-bold mb-4 text-center">예약 선택</h3>
-            <div className="mb-4 relative z-70">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6">
+            <h3 className="text-center text-base font-bold text-gray-800">
+              예약 선택
+            </h3>
+
+            <div className="mt-4">
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <DateTimePicker
                   label="날짜와 시간을 선택하세요"
                   value={selectedDate}
-                  onChange={(newValue) => {
-                    console.log("Selected date:", newValue);
-                    setSelectedDate(newValue);
-                  }}
-                  minDate={new Date()} // Prevent selecting past dates
+                  onChange={(newValue) => setSelectedDate(newValue)}
+                  minDate={new Date()}
                   format="yyyy/MM/dd hh:mm a"
                   slotProps={{
                     textField: {
@@ -226,26 +306,27 @@ export default function HospitalChatContent() {
                 />
               </LocalizationProvider>
             </div>
-            <div className="flex gap-2">
+
+            <div className="mt-5 flex gap-2">
               <button
+                type="button"
                 onClick={() => {
                   setShowReservationUI(false);
                   setSelectedDate(null);
                 }}
-                className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-gray-50"
+                className="flex-1 rounded-xl border border-gray-200 py-3 text-sm font-bold text-gray-700"
               >
                 취소
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setShowReservationUI(false);
                   setShowKakaoButton(true);
                 }}
                 disabled={!selectedDate}
-                className={`flex-1 px-4 py-2 rounded-lg text-white font-bold ${
-                  selectedDate
-                    ? "bg-blue-500 hover:bg-blue-600"
-                    : "bg-gray-400 cursor-not-allowed"
+                className={`flex-1 rounded-xl py-3 text-sm font-bold text-white ${
+                  selectedDate ? "bg-blue-500" : "bg-gray-300"
                 }`}
               >
                 예약 완료
@@ -254,30 +335,6 @@ export default function HospitalChatContent() {
           </div>
         </div>
       )}
-
-      <div className="bg-white border border-gray-200 p-4 rounded-b-xl">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-            placeholder="궁금한 점을 입력해주세요..."
-            className="flex-1 border-2 border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
-          />
-          <button
-            onClick={handleSendMessage}
-            disabled={loading || !inputMessage.trim()}
-            className={`px-4 py-2 rounded-lg text-sm font-bold text-white ${
-              loading || !inputMessage.trim()
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-500 hover:bg-blue-600"
-            }`}
-          >
-            {loading ? "..." : "전송"}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

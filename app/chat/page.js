@@ -1,8 +1,19 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  BookOpen,
+  ExternalLink,
+  Globe,
+  Hospital,
+  Loader2,
+  MessageSquare,
+  XCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { apiUrl } from "@/lib/api";
 
 export default function ChatPage() {
   const [symptoms, setSymptoms] = useState("");
@@ -34,18 +45,17 @@ export default function ChatPage() {
   const getUIText = (lang) => {
     const texts = {
       Korean: {
-        title: "🏥 AI 의료 상담",
         subtitle: "증상을 입력하시면 AI가 상담을 도와드립니다.",
         disclaimer:
-          "⚠️ 정확한 진단을 위해서는 반드시 의료진의 진료를 받으시기 바랍니다.",
-        label: "증상을 자세히 설명해주세요:",
+          "정확한 진단을 위해서는 반드시 의료진의 진료를 받으시기 바랍니다.",
+        label: "증상을 자세히 설명해주세요",
         placeholder: "예: 어제부터 머리가 아프고 열이 나며, 기침도 심해요...",
-        submitBtn: "🤖 AI 상담 받기",
+        submitBtn: "AI 상담 받기",
         loadingBtn: "상담 중...",
         clearBtn: "초기화",
-        errorTitle: "❌ 오류",
-        resultTitle: "💬 AI 상담 결과",
-        warningTitle: "⚠️ 중요한 안내",
+        errorTitle: "오류",
+        resultTitle: "AI 상담 결과",
+        warningTitle: "중요한 안내",
         warningItems: [
           "이 상담은 참고용이며 의학적 진단을 대체할 수 없습니다.",
           "심각한 증상이거나 응급상황이 의심되면 즉시 119에 신고하거나 응급실을 방문하세요.",
@@ -54,22 +64,21 @@ export default function ChatPage() {
         emptyError: "증상을 입력해주세요.",
         HospitalText: "당신의 주변의 병원을 추천해드릴까요?",
         HospitalLink: "네! 추천해주세요",
-        sourceTitle: "📚 참고 자료",
+        sourceTitle: "참고 자료",
       },
       English: {
-        title: "🏥 AI Medical Consultation",
         subtitle: "Enter your symptoms and AI will help with consultation.",
         disclaimer:
-          "⚠️ For accurate diagnosis, you must seek direct medical care from healthcare professionals.",
-        label: "Please describe your symptoms in detail:",
+          "For accurate diagnosis, you must seek direct medical care from healthcare professionals.",
+        label: "Please describe your symptoms in detail",
         placeholder:
           "e.g., I have been experiencing headaches and fever since yesterday, and severe coughing...",
-        submitBtn: "🤖 Get AI Consultation",
+        submitBtn: "Get AI Consultation",
         loadingBtn: "Consulting...",
         clearBtn: "Clear",
-        errorTitle: "❌ Error",
-        resultTitle: "💬 AI Consultation Result",
-        warningTitle: "⚠️ Important Notice",
+        errorTitle: "Error",
+        resultTitle: "AI Consultation Result",
+        warningTitle: "Important Notice",
         warningItems: [
           "This consultation is for reference only and cannot replace medical diagnosis.",
           "If you have serious symptoms or suspect an emergency, call emergency services immediately.",
@@ -78,7 +87,7 @@ export default function ChatPage() {
         emptyError: "Please enter your symptoms.",
         HospitalText: "Would you like me to recommend hospitals near you?",
         HospitalLink: "Yes, please recommend.",
-        sourceTitle: "📚 References",
+        sourceTitle: "References",
       },
     };
 
@@ -103,7 +112,7 @@ export default function ChatPage() {
     setSources([]);
 
     try {
-      const res = await fetch("/api/medical-consultation", {
+      const res = await fetch(apiUrl("/api/medical-consultation"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symptoms, language: currentLang }),
@@ -132,129 +141,143 @@ export default function ChatPage() {
   const currentUILang =
     detectedLanguage || (symptoms ? detectLanguage(symptoms) : "Korean");
   const uiText = getUIText(currentUILang);
+  const hasContent = symptoms.length > 0 || response.length > 0;
 
   return (
-    <div className="max-w-[800px] mx-auto p-5 font-sans">
-      <header className="text-center mb-8">
-        <h1 className="text-[2.2rem] text-[#2c3e50] mb-2 font-bold">
-          {uiText.title}
-        </h1>
-        <p className="text-[#7f8c8d] text-base mb-1">{uiText.subtitle}</p>
-        <p className="text-[#e74c3c] text-sm font-bold">{uiText.disclaimer}</p>
+    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-5 py-5">
+      {/* 안내 */}
+      <div className="flex flex-col gap-2.5">
+        <p className="text-sm text-gray-500">{uiText.subtitle}</p>
+
+        <p className="flex items-start gap-2 rounded-xl bg-amber-50 px-3.5 py-3 text-xs leading-relaxed text-amber-800">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
+          {uiText.disclaimer}
+        </p>
 
         {detectedLanguage && (
-          <div className="inline-block bg-[#3498db] text-white px-3 py-1 rounded-full text-xs mt-3">
-            🌍 Detected: {detectedLanguage}
-          </div>
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600">
+            <Globe size={13} aria-hidden="true" />
+            Detected: {detectedLanguage}
+          </span>
         )}
-      </header>
+      </div>
 
-      <form onSubmit={handleSubmit} className="mb-8">
-        <div className="mb-5">
-          <label
-            htmlFor="symptoms"
-            className="block mb-2 font-bold text-[#34495e]"
-          >
-            {uiText.label}
-          </label>
-          <textarea
-            id="symptoms"
-            value={symptoms}
-            onChange={(e) => setSymptoms(e.target.value)}
-            placeholder={uiText.placeholder}
-            className="w-full min-h-[140px] p-4 border-2 border-[#e1e8ed] rounded-lg text-base leading-relaxed resize-y focus:border-[#3498db] outline-none transition"
-          />
-        </div>
+      {/* 입력 */}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <label htmlFor="symptoms" className="text-sm font-bold text-gray-800">
+          {uiText.label}
+        </label>
 
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="submit"
-            disabled={loading}
-            className={`flex items-center justify-center gap-2 px-7 py-3 rounded-lg font-bold text-white transition flex-1 min-w-[180px] ${
-              loading
-                ? "bg-[#95a5a6] cursor-not-allowed"
-                : "bg-[#3498db] hover:bg-[#2980b9]"
-            }`}
-          >
-            {loading && <Loader2 className="animate-spin h-5 w-5" />}
-            {loading ? uiText.loadingBtn : uiText.submitBtn}
-          </button>
+        <textarea
+          id="symptoms"
+          value={symptoms}
+          onChange={(e) => setSymptoms(e.target.value)}
+          placeholder={uiText.placeholder}
+          rows={5}
+          className="w-full resize-none rounded-2xl border border-gray-200 bg-white p-4 text-base leading-relaxed outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
 
+        <button
+          type="submit"
+          disabled={loading}
+          className={`flex items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white transition ${
+            loading ? "bg-gray-400" : "bg-blue-500 active:scale-[0.99]"
+          }`}
+        >
+          {loading && <Loader2 size={18} className="animate-spin" aria-hidden="true" />}
+          {loading ? uiText.loadingBtn : uiText.submitBtn}
+        </button>
+
+        {hasContent && (
           <button
             type="button"
             onClick={clearForm}
-            className="px-6 py-3 bg-[#e74c3c] hover:bg-[#c0392b] text-white rounded-lg font-bold transition min-w-[100px]"
+            className="self-center px-4 py-2 text-sm font-medium text-gray-400 active:text-gray-600"
           >
             {uiText.clearBtn}
           </button>
-        </div>
+        )}
       </form>
 
+      {/* 오류 */}
       {error && (
-        <div className="p-4 bg-[#fee] border-l-4 border-[#e74c3c] rounded-md mb-6 shadow">
-          <h4 className="text-[#e74c3c] font-semibold mb-1 text-base">
-            {uiText.errorTitle}
-          </h4>
-          <p className="text-[#c0392b] text-sm">{error}</p>
-        </div>
-      )}
-
-      {response && (
-        <div className="p-6 bg-[#f8f9fa] border border-[#e1e8ed] rounded-xl shadow mb-6">
-          <h3 className="text-lg font-bold text-[#2c3e50] border-b-2 border-[#3498db] pb-2 mb-4">
-            {uiText.resultTitle}
-          </h3>
-          <p className="whitespace-pre-wrap text-[#34495e] leading-relaxed text-sm mb-4">
-            {response}
-          </p>
-
-          {sources.length > 0 && (
-            <div className="mt-4">
-              <h4 className="font-semibold text-gray-800 mb-2">
-                {uiText.sourceTitle}
-              </h4>
-              <ul className="list-disc pl-5 space-y-1 text-blue-600 text-sm">
-                {sources.map((src, i) => (
-                  <li key={i}>
-                    <a
-                      href={src.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:underline"
-                    >
-                      {src.title || src.url}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="mt-6 border-t pt-4">
-            <h4 className="font-semibold text-gray-800 mb-2">
-              {uiText.HospitalText}
-            </h4>
-            <Link
-              href="/hospitalList"
-              className="inline-block px-4 py-2 rounded-lg bg-blue-400 text-white text-sm font-medium shadow hover:bg-blue-500 transition"
-            >
-              {uiText.HospitalLink}
-            </Link>
+        <div className="flex items-start gap-2.5 rounded-2xl border border-red-100 bg-red-50 p-4">
+          <XCircle size={17} className="mt-0.5 shrink-0 text-red-500" aria-hidden="true" />
+          <div>
+            <h2 className="text-sm font-bold text-red-600">{uiText.errorTitle}</h2>
+            <p className="mt-0.5 text-sm text-red-500">{error}</p>
           </div>
         </div>
       )}
 
+      {/* 결과 */}
       {response && (
-        <div className="p-5 bg-[#fff3cd] border border-[#ffeaa7] rounded-lg shadow">
-          <h4 className="text-[#856404] font-semibold mb-2 text-base">
-            {uiText.warningTitle}
-          </h4>
-          <ul className="list-disc pl-5 text-[#856404] space-y-1 text-sm">
-            {uiText.warningItems.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
-          </ul>
-        </div>
+        <>
+          <section className="rounded-2xl border border-gray-200 bg-white p-5">
+            <h2 className="flex items-center gap-2 text-base font-bold text-gray-800">
+              <MessageSquare size={17} className="text-blue-500" aria-hidden="true" />
+              {uiText.resultTitle}
+            </h2>
+
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
+              {response}
+            </p>
+
+            {sources.length > 0 && (
+              <div className="mt-5 border-t border-gray-100 pt-4">
+                <h3 className="flex items-center gap-1.5 text-sm font-bold text-gray-700">
+                  <BookOpen size={15} className="text-gray-400" aria-hidden="true" />
+                  {uiText.sourceTitle}
+                </h3>
+                <ul className="mt-2 flex flex-col gap-1.5">
+                  {sources.map((src, i) => (
+                    <li key={i}>
+                      <a
+                        href={src.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm text-blue-600"
+                      >
+                        {src.title || src.url}
+                        <ExternalLink size={12} className="shrink-0" aria-hidden="true" />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-2xl border border-amber-100 bg-amber-50 p-5">
+            <h2 className="flex items-center gap-2 text-sm font-bold text-amber-800">
+              <AlertTriangle size={16} aria-hidden="true" />
+              {uiText.warningTitle}
+            </h2>
+            <ul className="mt-2 flex flex-col gap-1.5 text-sm leading-relaxed text-amber-800">
+              {uiText.warningItems.map((item, i) => (
+                <li key={i} className="flex gap-2">
+                  <span aria-hidden="true">·</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* 다음 단계 */}
+          <section className="rounded-2xl bg-blue-500 p-5 text-white">
+            <p className="text-sm font-medium text-blue-50">
+              {uiText.HospitalText}
+            </p>
+            <Link
+              href="/hospitalList"
+              className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-white py-3.5 text-base font-bold text-blue-600 transition active:scale-[0.99]"
+            >
+              <Hospital size={18} aria-hidden="true" />
+              {uiText.HospitalLink}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          </section>
+        </>
       )}
     </div>
   );

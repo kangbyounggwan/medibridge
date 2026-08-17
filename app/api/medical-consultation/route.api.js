@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server";
 
+// 모바일 앱(Capacitor)은 http://localhost 오리진에서 이 API를 크로스 오리진으로 호출한다.
+// 쿠키/인증정보를 쓰지 않는 엔드포인트라 * 로 허용한다.
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
 export async function POST(request) {
   try {
     const { symptoms, language } = await request.json();
@@ -7,7 +15,7 @@ export async function POST(request) {
     if (!symptoms || symptoms.trim() === "") {
       return NextResponse.json(
         { error: "증상을 입력해주세요." },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -108,18 +116,22 @@ export async function POST(request) {
       },
     ];
 
-    return NextResponse.json({
-      response: aiResponse,
-      sources,
-      timestamp: new Date().toISOString(),
-    });
+    return NextResponse.json(
+      {
+        response: aiResponse,
+        sources,
+        timestamp: new Date().toISOString(),
+      },
+      { headers: corsHeaders }
+    );
   } catch (error) {
     console.error("API 에러:", error);
 
     // OpenAI API 키가 없는 경우 테스트 응답 제공
     if (error.message.includes("OpenAI API")) {
-      return NextResponse.json({
-        response: `테스트 응답: 입력하신 증상에 대해 다음과 같이 안내드립니다.
+      return NextResponse.json(
+        {
+          response: `테스트 응답: 입력하신 증상에 대해 다음과 같이 안내드립니다.
 
 🔍 증상 분석:
 입력하신 증상을 확인했습니다.
@@ -133,19 +145,21 @@ export async function POST(request) {
 정확한 진단을 위해 가까운 병원을 방문하시기 바랍니다.
 
 *이것은 테스트 응답입니다. 실제 서비스를 위해서는 OpenAI API 키가 필요합니다.*`,
-        sources: [
-          {
-            title: "국가건강정보포털",
-            url: "https://health.kdca.go.kr/healthinfo/",
-          },
-          {
-            title: "서울대학교병원 의학정보",
-            url: "https://www.snuh.org/m/health/nMedInfo/nList.do",
-          },
-        ],
-        timestamp: new Date().toISOString(),
-        isTestResponse: true,
-      });
+          sources: [
+            {
+              title: "국가건강정보포털",
+              url: "https://health.kdca.go.kr/healthinfo/",
+            },
+            {
+              title: "서울대학교병원 의학정보",
+              url: "https://www.snuh.org/m/health/nMedInfo/nList.do",
+            },
+          ],
+          timestamp: new Date().toISOString(),
+          isTestResponse: true,
+        },
+        { headers: corsHeaders }
+      );
     }
 
     return NextResponse.json(
@@ -153,7 +167,7 @@ export async function POST(request) {
         error:
           "AI 상담 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.",
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

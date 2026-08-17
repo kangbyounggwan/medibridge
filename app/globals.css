@@ -3,6 +3,12 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* 앱 셸 치수. 상태바/제스처바 인셋은 Capacitor(viewportFit: cover)에서 채워진다. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --appbar-h: 3.5rem;
+  --tabbar-h: 3.75rem;
 }
 
 @theme inline {
@@ -12,15 +18,43 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/*
+  화면 컴포넌트가 모두 밝은 팔레트(bg-gray-50 / text-gray-800)로 고정돼 있어
+  다크 모드에서 배경만 검게 바뀌면 본문이 읽히지 않는다. 팔레트를 다크까지
+  설계하기 전까지는 앱을 밝은 테마로 고정한다.
+*/
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* 앱에서 화면 전환 시 가로 스크롤이 생기지 않도록 */
+html,
+body {
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+}
+
+/*
+  채팅 화면처럼 입력창을 하단에 고정해야 하는 화면용 높이.
+  앱바(+상단 인셋)와 탭바(+하단 인셋)를 뺀 나머지를 정확히 채운다.
+*/
+.screen-fill {
+  height: calc(
+    100dvh - var(--safe-top) - var(--appbar-h) - var(--tabbar-h) -
+      var(--safe-bottom)
+  );
+}
+@media (min-width: 768px) {
+  /* 데스크톱은 웹 헤더(80px) + 푸터(약 90px) 기준 */
+  .screen-fill {
+    height: calc(100dvh - 170px);
+  }
+}
+
+/* 탭바를 눌렀을 때 파란 하이라이트가 뜨는 웹 티를 없앤다 */
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
 }

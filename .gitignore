@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/out-mobile/
 /out/
 
 # production
@@ -39,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude Code 로컬 권한 캐시(세션별 경로 포함)
+.claude/settings.local.json

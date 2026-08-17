@@ -6,9 +6,18 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "build:mobile": "cross-env MOBILE_BUILD=1 NEXT_PUBLIC_API_BASE_URL=https://medibridge.vercel.app next build",
+    "build:mobile:local": "cross-env MOBILE_BUILD=1 NEXT_PUBLIC_API_BASE_URL=http://10.0.2.2:3000 next build",
+    "android:sync:local": "npm run build:mobile:local && cap sync android",
+    "android:sync": "npm run build:mobile && cap sync android",
+    "android": "npm run android:sync && cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/geolocation": "^8.2.2",
+    "@capawesome/capacitor-android-edge-to-edge-support": "^8.0.8",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.2",
@@ -23,8 +32,10 @@
     "react-dom": "19.1.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "15.5.3",
     "tailwindcss": "^4"

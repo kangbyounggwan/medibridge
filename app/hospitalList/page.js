@@ -1,6 +1,5 @@
 // app/hospitalList/page.js
 "use client";
-export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
 import HospitalListContent from "@/components/HospitalListContent";

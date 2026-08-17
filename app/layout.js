@@ -1,8 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Link from "next/link";
-import Image from "next/image";
-import logo from "@/public/logo.png";
+import AppBar from "@/components/AppBar";
+import TabBar from "@/components/TabBar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,56 +15,44 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "MEDIBRIDGE",
-  description: "개원 입지 분석 및 올인원 병원 마케팅",
+  description: "한국 거주 외국인을 위한 AI 병원 연결 플랫폼",
+};
+
+// viewportFit: cover 라야 앱에서 env(safe-area-inset-*)에 실제 값이 들어온다.
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="ko">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex min-h-screen flex-col bg-white`}
       >
-        {/* 헤더 */}
-        <header className="bg-white shadow-md h-[80px] px-6 border-b-gray-300 border-b-[1px]">
-          <div className="max-w-7xl mx-auto  flex items-center justify-between h-full">
-            <Link href="/" className="text-2xl font-extrabold text-gray-800">
-              <Image src={logo} width={120} height={50} alt="logo" />
-            </Link>
-            <nav className="flex gap-6 text-gray-700 font-medium">
-              <Link href="#" className="text-gray-400">
-                회사소개
-              </Link>
-              <Link href="#" className="text-gray-400">
-                서비스소개
-              </Link>
-              <Link href="#" className="text-gray-400">
-                성과
-              </Link>
-              <Link href="#" className="text-gray-400">
-                인스타그램
-              </Link>
-              <Link href="#" className="text-gray-400">
-                QNA
-              </Link>
-            </nav>
-          </div>
-        </header>
+        <AppBar />
 
-        {/* 페이지 내용 */}
-        <main className="">{children}</main>
+        {/* 모바일에서는 하단 탭바에 가리지 않도록 그만큼 비워둔다. */}
+        <main className="flex-1 pb-[calc(var(--tabbar-h)+var(--safe-bottom))] md:pb-0">
+          {children}
+        </main>
 
-        {/* 푸터 */}
-        <footer className="border-t border-gray-300">
-          <div className="max-w-7xl mx-auto px-6 py-6 text-center text-gray-500 text-sm">
+        {/* 웹 푸터. 앱에서는 탭바가 그 역할을 하므로 데스크톱에서만 보인다. */}
+        <footer className="hidden border-t border-gray-300 md:block">
+          <div className="mx-auto max-w-7xl px-6 py-6 text-center text-sm text-gray-500">
             <p className="mb-1">
               © 2025 AI Medical Consultation Service | MEDIBRIDGE
             </p>
-            <p className="text-gray-400 text-xs">
+            <p className="text-xs text-gray-400">
               🌍 Multi-language support: Korean, English, Chinese, Japanese, and
               more
             </p>
           </div>
         </footer>
+
+        <TabBar />
       </body>
     </html>
   );

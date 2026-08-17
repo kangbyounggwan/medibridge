@@ -1,219 +1,239 @@
-// app/hospitalList/page.js
 "use client";
-export const dynamic = "force-dynamic";
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Geolocation } from "@capacitor/geolocation";
+import { AlertCircle, Clock, MapPin, Phone, RefreshCw } from "lucide-react";
+import { apiUrl } from "@/lib/api";
+import { formatDistance } from "@/lib/geo";
+
+const SEARCH_RADIUS_M = 2000;
 
 export default function HospitalListContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [symptoms, setSymptoms] = useState("");
   const [aiResponse, setAiResponse] = useState("");
 
   const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [userLocation, setUserLocation] = useState(null);
-
-  const mockHospitals = [
-    {
-      id: 1,
-      name: "아늑한의원",
-      type: "한의원",
-      distance: "300m",
-      specialties: ["약침", "침치료", "추나"],
-      rating: 4.8,
-      reviews: 124,
-      phone: "042-123-4567",
-      address: "대전시 중구 은행동 123-45",
-    },
-    {
-      id: 2,
-      name: "튼튼정형외과",
-      type: "정형외과",
-      distance: "520m",
-      specialties: ["도수치료", "물리치료", "관절염"],
-      rating: 4.6,
-      reviews: 89,
-      phone: "042-234-5678",
-      address: "대전시 중구 대흥동 234-56",
-    },
-    {
-      id: 3,
-      name: "충남대학교병원",
-      type: "종합병원",
-      distance: "700m",
-      specialties: ["MRI 검사", "CT 촬영", "전문의 진료"],
-      rating: 4.5,
-      reviews: 256,
-      phone: "042-280-7000",
-      address: "대전시 중구 문화로 282",
-    },
-  ];
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     setSymptoms(searchParams.get("symptoms") || "");
     setAiResponse(searchParams.get("aiResponse") || "");
   }, [searchParams]);
 
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-          setTimeout(() => {
-            setHospitals(mockHospitals);
-            setLoading(false);
-          }, 2000);
-        },
-        () => {
-          setTimeout(() => {
-            setHospitals(mockHospitals);
-            setLoading(false);
-          }, 2000);
-        }
-      );
-    } else {
-      setTimeout(() => {
-        setHospitals(mockHospitals);
-        setLoading(false);
-      }, 2000);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    let coords;
+    try {
+      // 웹에서는 navigator.geolocation으로, 앱에서는 네이티브 권한 흐름으로 처리된다.
+      //
+      // maximumAge를 주지 않으면 매번 새 GPS 픽스를 기다린다. 실내나 콜드 스타트에서는
+      // 수십 초가 걸리거나 아예 실패한다. 병원 목록은 수백 m 단위 정확도면 충분하므로
+      // 최근 5분 내 캐시된 위치를 받아들인다.
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: false,
+        maximumAge: 5 * 60 * 1000,
+        timeout: 20000,
+      });
+      coords = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      };
+    } catch {
+      setError({
+        kind: "location",
+        message: "위치를 확인할 수 없습니다. 위치 권한을 허용해주세요.",
+      });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const query = new URLSearchParams({
+        lat: String(coords.lat),
+        lng: String(coords.lng),
+        radius: String(SEARCH_RADIUS_M),
+      });
+      const res = await fetch(apiUrl(`/api/hospitals?${query}`));
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError({ kind: data.error ?? "unknown", message: data.message });
+        return;
+      }
+
+      setHospitals(data.hospitals ?? []);
+    } catch {
+      setError({
+        kind: "network",
+        message: "병원 정보를 가져오지 못했습니다. 연결을 확인해주세요.",
+      });
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  const handleHospitalClick = (hospital) => {
-    const queryParams = new URLSearchParams({
-      hospitalId: hospital.id,
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const openHospital = (hospital) => {
+    const query = new URLSearchParams({
+      hospitalId: String(hospital.id),
       hospitalName: hospital.name,
       hospitalType: hospital.type,
-      symptoms: symptoms || "",
-      aiResponse: aiResponse || "",
+      hospitalPhone: hospital.phone ?? "",
+      symptoms,
+      aiResponse,
     });
-    window.location.href = `/hospitalChat?${queryParams}`;
+    // location.href는 앱에서 전체 리로드(흰 화면 깜빡임)를 일으킨다.
+    router.push(`/hospitalChat?${query}`);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen text-center">
-        <div>
-          <h2 className="text-lg font-semibold mb-4">
-            🔍 주변 병원을 찾는 중...
-          </h2>
-          <div className="mx-auto w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-3xl mx-auto p-5 font-sans">
-      <header className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">
-          🏥 주변 병원 찾기
-        </h1>
-        <p className="text-gray-500 text-base">
-          반경 1km 내 추천 병원 목록입니다
-        </p>
-
-        {symptoms && (
-          <div className="bg-gray-100 p-4 rounded-lg mt-4">
-            <h4 className="text-gray-700 font-semibold mb-2">상담받은 증상:</h4>
-            <p className="text-sm text-gray-500">{symptoms}</p>
-          </div>
-        )}
-      </header>
-
-      <div className="mb-5">
-        <p className="text-green-600 font-bold">
-          📍 {hospitals.length}개의 병원을 찾았습니다
-        </p>
-      </div>
-
-      {hospitals.map((hospital, index) => (
-        <div
-          key={hospital.id}
-          onClick={() => handleHospitalClick(hospital)}
-          className={`relative bg-white border-2 rounded-xl p-5 mb-4 cursor-pointer transition-all duration-200 hover:-translate-y-1 ${
-            index === 0
-              ? "border-blue-300  hover:border-blue-500"
-              : "border-gray-200 hover:border-blue-500"
-          }`}
-        >
-          {/* 추천 뱃지 */}
-          {index === 0 && (
-            <span className="absolute -top-2 -left-2 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-tr-lg rounded-bl-lg shadow-md">
-              추천!
-            </span>
-          )}
-
-          <div className="flex justify-between items-start mb-3">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                {index + 1}. {hospital.name}
-              </h3>
-              <div className="flex items-center gap-2">
-                <span className="bg-blue-300 text-white text-xs px-2 py-0.5 rounded-full">
-                  {hospital.type}
-                </span>
-                <span className="text-red-500 font-bold">
-                  📍 {hospital.distance}
-                </span>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-yellow-500 mb-1">⭐ {hospital.rating}</div>
-              <div className="text-gray-400 text-xs">
-                ({hospital.reviews}개 리뷰)
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-3">
-            <h4 className="text-sm text-gray-700 font-semibold mb-2">
-              추천 치료:
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {hospital.specialties.map((specialty, idx) => (
-                <span
-                  key={idx}
-                  className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs"
-                >
-                  {specialty}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="text-sm text-gray-500">
-            <div>📞 {hospital.phone}</div>
-            <div className="mt-1">📍 {hospital.address}</div>
-          </div>
-
-          <div className="mt-3 p-2 bg-green-100 rounded text-xs text-green-600 text-center">
-            💬 클릭하시면 해당 병원과의 상담 및 예약으로 넘어갑니다
-          </div>
+    <div className="mx-auto max-w-3xl px-5 py-5">
+      {symptoms && (
+        <div className="mb-5 rounded-xl bg-gray-100 p-4">
+          <h2 className="mb-1 text-sm font-semibold text-gray-700">
+            상담받은 증상
+          </h2>
+          <p className="text-sm text-gray-500">{symptoms}</p>
         </div>
-      ))}
+      )}
 
-      <div className="text-center mt-8 p-5 bg-yellow-100 rounded-lg border border-yellow-200">
-        <h4 className="text-yellow-800 font-bold mb-2">⚠️ 안내사항</h4>
-        <ul className="list-disc list-inside text-left text-yellow-800 text-sm">
+      {loading && <LoadingState />}
+
+      {!loading && error && <ErrorState error={error} onRetry={load} />}
+
+      {!loading && !error && hospitals.length === 0 && (
+        <EmptyState radius={SEARCH_RADIUS_M} onRetry={load} />
+      )}
+
+      {!loading && !error && hospitals.length > 0 && (
+        <>
+          <p className="mb-3 text-sm font-semibold text-green-600">
+            반경 {SEARCH_RADIUS_M / 1000}km 내 {hospitals.length}곳
+          </p>
+
+          <ul className="flex flex-col gap-3">
+            {hospitals.map((hospital) => (
+              <li key={hospital.id}>
+                <button
+                  type="button"
+                  onClick={() => openHospital(hospital)}
+                  className="w-full rounded-2xl border border-gray-200 bg-white p-4 text-left transition active:scale-[0.995] active:bg-gray-50"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="text-base font-bold text-gray-800">
+                      {hospital.name}
+                    </h3>
+                    {hospital.distance != null && (
+                      <span className="shrink-0 text-sm font-bold text-blue-600">
+                        {formatDistance(hospital.distance)}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                    {hospital.type && (
+                      <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
+                        {hospital.type}
+                      </span>
+                    )}
+                    {hospital.dutyHours && (
+                      <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                        <Clock size={13} aria-hidden="true" />
+                        {hospital.dutyHours}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-3 flex flex-col gap-1 text-sm text-gray-500">
+                    {hospital.address && (
+                      <span className="flex items-start gap-1.5">
+                        <MapPin
+                          size={14}
+                          className="mt-0.5 shrink-0"
+                          aria-hidden="true"
+                        />
+                        {hospital.address}
+                      </span>
+                    )}
+                    {hospital.phone && (
+                      <span className="flex items-center gap-1.5">
+                        <Phone size={14} aria-hidden="true" />
+                        {hospital.phone}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      <div className="mt-6 rounded-xl border border-yellow-200 bg-yellow-50 p-4">
+        <h3 className="mb-1.5 text-sm font-bold text-yellow-800">안내사항</h3>
+        <ul className="list-inside list-disc text-sm text-yellow-800">
           <li>병원 정보는 실시간으로 변경될 수 있습니다.</li>
           <li>진료 시간 및 예약 가능 여부를 미리 확인하세요.</li>
           <li>응급상황 시에는 119에 신고하세요.</li>
         </ul>
       </div>
+    </div>
+  );
+}
 
-      <div className="text-center mt-5">
-        <button
-          onClick={() => (window.location.href = "/chat")}
-          className="px-5 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500"
-        >
-          ← 증상 상담으로 돌아가기
-        </button>
-      </div>
+function LoadingState() {
+  return (
+    <div className="flex min-h-[45vh] flex-col items-center justify-center gap-4 text-center">
+      <div className="h-11 w-11 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500" />
+      <p className="text-sm text-gray-500">주변 병원을 찾는 중...</p>
+    </div>
+  );
+}
+
+function ErrorState({ error, onRetry }) {
+  return (
+    <div className="flex min-h-[45vh] flex-col items-center justify-center gap-3 px-6 text-center">
+      <AlertCircle size={36} className="text-gray-300" aria-hidden="true" />
+      <p className="text-sm text-gray-600">
+        {error.message ?? "병원 정보를 가져오지 못했습니다."}
+      </p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-1 inline-flex items-center gap-1.5 rounded-xl bg-blue-500 px-5 py-2.5 text-sm font-semibold text-white active:scale-[0.99]"
+      >
+        <RefreshCw size={15} aria-hidden="true" />
+        다시 시도
+      </button>
+    </div>
+  );
+}
+
+function EmptyState({ radius, onRetry }) {
+  return (
+    <div className="flex min-h-[45vh] flex-col items-center justify-center gap-3 px-6 text-center">
+      <MapPin size={36} className="text-gray-300" aria-hidden="true" />
+      <p className="text-sm text-gray-600">
+        반경 {radius / 1000}km 안에 등록된 병원이 없습니다.
+      </p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-1 inline-flex items-center gap-1.5 rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-700 active:scale-[0.99]"
+      >
+        <RefreshCw size={15} aria-hidden="true" />
+        다시 찾기
+      </button>
     </div>
   );
 }

@@ -1,53 +1,56 @@
 "use client";
-import { Loader2, FileDown } from "lucide-react";
-import { useState, useEffect } from "react";
 
-const AnalysisLoading = ({ onFinish, fileUrl }) => {
-  const messages = [
-    "질병관리청 지역건강통계 데이터를 분석중입니다...",
-    "주변 지역 상권 및 경쟁의원을 분석중입니다...",
-  ];
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
+const MESSAGES = [
+  "질병관리청 지역건강통계 데이터를 분석중입니다...",
+  "주변 지역 상권 및 경쟁의원을 분석중입니다...",
+];
+
+const STEP_MS = 3000;
+
+const AnalysisLoading = ({ onFinish }) => {
   const [step, setStep] = useState(0);
-  const [finished, setFinished] = useState(false);
 
   useEffect(() => {
-    if (step < messages.length) {
-      const timer = setTimeout(() => {
-        setStep((prev) => prev + 1);
-      }, 3000); // 각 메시지 3초씩 보여줌
-      return () => clearTimeout(timer);
-    } else {
-      // 모든 메시지 끝나면 다운로드 상태로 전환
-      const finishTimer = setTimeout(() => {
-        setFinished(true);
-        if (onFinish) onFinish();
-      }, 1000);
-      return () => clearTimeout(finishTimer);
+    // 마지막 메시지까지 보여준 뒤 부모에게 완료를 알린다.
+    if (step >= MESSAGES.length) {
+      const done = setTimeout(() => onFinish?.(), 800);
+      return () => clearTimeout(done);
     }
+
+    const next = setTimeout(() => setStep((prev) => prev + 1), STEP_MS);
+    return () => clearTimeout(next);
   }, [step, onFinish]);
 
+  const current = Math.min(step, MESSAGES.length - 1);
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex flex-col items-center justify-center p-6">
-      {!finished ? (
-        <div className="flex flex-col items-center gap-4 bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-xl">
-          <Loader2 className="animate-spin text-blue-600 w-12 h-12" />
-          <p className="text-gray-800 text-lg font-semibold text-center">
-            {messages[Math.min(step, messages.length - 1)]}
-          </p>
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
+    >
+      <div className="flex w-full max-w-xs flex-col items-center gap-4 rounded-2xl bg-white p-7">
+        <Loader2 size={36} className="animate-spin text-blue-500" aria-hidden="true" />
+
+        <p className="text-center text-sm font-medium leading-relaxed text-gray-700">
+          {MESSAGES[current]}
+        </p>
+
+        {/* 단계 표시 */}
+        <div className="flex gap-1.5" aria-hidden="true">
+          {MESSAGES.map((_, i) => (
+            <span
+              key={i}
+              className={`h-1.5 rounded-full transition-all ${
+                i <= current ? "w-6 bg-blue-500" : "w-1.5 bg-gray-200"
+              }`}
+            />
+          ))}
         </div>
-      ) : (
-        fileUrl && (
-          <a
-            href={fileUrl}
-            download
-            className="flex items-center gap-2 px-8 py-4 bg-green-500 hover:bg-green-600 text-white rounded-2xl font-semibold text-lg shadow-lg transition"
-          >
-            <FileDown className="w-6 h-6" />
-            PDF 다운로드
-          </a>
-        )
-      )}
+      </div>
     </div>
   );
 };
