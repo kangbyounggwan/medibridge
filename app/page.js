@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowRight, FileText, Hospital, Stethoscope } from "lucide-react";
+import { ArrowRight, Building2, Hospital, Siren, Stethoscope } from "lucide-react";
 import mainImg from "@/public/service_sample.png";
 
 const fadeUp = {
@@ -74,15 +74,15 @@ export default function Home() {
         </Link>
 
         <Link
-          href="/analysis"
+          href="/emergency"
           className="rounded-2xl border border-gray-200 bg-white p-4 transition active:scale-[0.99] active:bg-gray-50"
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-            <FileText size={22} aria-hidden="true" />
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600">
+            <Siren size={22} aria-hidden="true" />
           </span>
-          <span className="mt-3 block font-bold text-gray-800">월간 리포트</span>
+          <span className="mt-3 block font-bold text-gray-800">응급실</span>
           <span className="mt-0.5 block text-xs text-gray-500">
-            병원 분석 레포트
+            지금 갈 수 있는 곳
           </span>
         </Link>
       </motion.div>
@@ -96,25 +96,32 @@ export default function Home() {
         <Image src={mainImg} alt="메디브릿지 서비스 소개" className="w-full" />
       </motion.div>
 
-      {/* 상담 신청 */}
+      {/*
+        병원 관계자 진입점. 환자용 앱이라 눈에 띄되 주 흐름을 가리지 않도록
+        하단에 절제된 톤으로 둔다.
+      */}
       <motion.div
         {...fadeUp}
         transition={{ duration: 0.45, delay: 0.3 }}
-        className="mt-8 rounded-2xl bg-blue-400 p-5 text-center md:mt-14 md:p-10"
+        className="mt-8 md:mt-14"
       >
-        <p className="text-base font-bold leading-relaxed text-white md:text-2xl">
-          남들보다 앞서나가는 병원만들기,
-          <br />
-          5분 상담을 통해 지금 바로 시작해보세요!
-        </p>
-        <a
-          href="https://naver.me/G8hId90X"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-4 inline-block rounded-xl bg-white px-6 py-3 font-semibold text-blue-500 transition active:scale-[0.99] md:hover:bg-blue-600 md:hover:text-white"
+        <Link
+          href="/clinic"
+          className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 transition active:scale-[0.99] active:bg-gray-100"
         >
-          상담 신청 하기 &#8640;
-        </a>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-gray-500">
+            <Building2 size={20} aria-hidden="true" />
+          </span>
+          <span className="flex-1">
+            <span className="block text-sm font-bold text-gray-800">
+              병원을 운영하시나요?
+            </span>
+            <span className="mt-0.5 block text-xs text-gray-500">
+              병원 등록하고 월간 리포트 받아보기
+            </span>
+          </span>
+          <ArrowRight size={16} aria-hidden="true" className="shrink-0 text-gray-400" />
+        </Link>
       </motion.div>
     </div>
   );

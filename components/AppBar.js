@@ -11,11 +11,20 @@ const TITLES = {
   "/chat": "AI 상담",
   "/hospitalList": "병원 찾기",
   "/hospitalChat": "병원 상담",
+  "/emergency": "응급실 찾기",
+  "/clinic": "병원 서비스",
   "/analysis": "월간 리포트",
 };
 
 // 탭으로 바로 갈 수 있는 화면은 스택의 뿌리라 뒤로가기를 두지 않는다.
-const TAB_ROUTES = new Set(["/", "/chat", "/hospitalList", "/analysis"]);
+// /clinic은 환자 홈에서 들어오는 진입점이라 뒤로가기를 남긴다.
+const TAB_ROUTES = new Set([
+  "/",
+  "/chat",
+  "/hospitalList",
+  "/emergency",
+  "/analysis",
+]);
 
 // 웹 사이트용 메뉴. 아직 대상 페이지가 없어 데스크톱에서만 노출한다.
 const SITE_LINKS = ["회사소개", "서비스소개", "성과", "인스타그램", "QNA"];

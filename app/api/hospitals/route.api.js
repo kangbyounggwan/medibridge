@@ -33,7 +33,8 @@ export async function GET(request) {
       lat,
       lng,
       radius: Number(params.get("radius")) || DEFAULT_RADIUS_M,
-      limit: Number(params.get("limit")) || 20,
+      page: Number(params.get("page")) || 1,
+      pageSize: Number(params.get("pageSize")) || 20,
       // 서버 전용 키. 클라이언트 번들에 들어가지 않는다.
       serviceKey: process.env.DATA_GO_KR_SERVICE_KEY,
     });

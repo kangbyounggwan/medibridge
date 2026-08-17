@@ -4,25 +4,36 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Capacitor } from "@capacitor/core";
 import { Geolocation } from "@capacitor/geolocation";
-import { AlertCircle, Clock, MapPin, Phone, RefreshCw } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronDown,
+  Clock,
+  Loader2,
+  MapPin,
+  Phone,
+  RefreshCw,
+} from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { formatDistance } from "@/lib/geo";
 import { HospitalLookupError, fetchHospitals } from "@/lib/hospitals";
 
 const SEARCH_RADIUS_M = 2000;
+const PAGE_SIZE = 20;
 
 /**
  * 앱에서는 서버 없이 공공데이터 API를 직접 부른다.
  * CapacitorHttp가 fetch를 네이티브로 보내므로 CORS에 막히지 않는다.
  * 브라우저는 CORS 때문에 직접 부를 수 없어 /api/hospitals 프록시를 거친다.
  */
-async function lookupHospitals({ lat, lng, radius }) {
+async function lookupHospitals({ lat, lng, radius, page }) {
   if (Capacitor.isNativePlatform()) {
     try {
       return await fetchHospitals({
         lat,
         lng,
         radius,
+        page,
+        pageSize: PAGE_SIZE,
         serviceKey: process.env.NEXT_PUBLIC_DATA_GO_KR_SERVICE_KEY,
       });
     } catch (error) {
@@ -37,6 +48,8 @@ async function lookupHospitals({ lat, lng, radius }) {
     lat: String(lat),
     lng: String(lng),
     radius: String(radius),
+    page: String(page),
+    pageSize: String(PAGE_SIZE),
   });
   const res = await fetch(apiUrl(`/api/hospitals?${query}`));
   const data = await res.json();
@@ -52,7 +65,12 @@ export default function HospitalListContent() {
   const [aiResponse, setAiResponse] = useState("");
 
   const [hospitals, setHospitals] = useState([]);
+  const [coords, setCoords] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -64,10 +82,8 @@ export default function HospitalListContent() {
     setLoading(true);
     setError(null);
 
-    let coords;
+    let origin;
     try {
-      // 웹에서는 navigator.geolocation으로, 앱에서는 네이티브 권한 흐름으로 처리된다.
-      //
       // maximumAge를 주지 않으면 매번 새 GPS 픽스를 기다린다. 실내나 콜드 스타트에서는
       // 수십 초가 걸리거나 아예 실패한다. 병원 목록은 수백 m 단위 정확도면 충분하므로
       // 최근 5분 내 캐시된 위치를 받아들인다.
@@ -76,10 +92,11 @@ export default function HospitalListContent() {
         maximumAge: 5 * 60 * 1000,
         timeout: 20000,
       });
-      coords = {
+      origin = {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
       };
+      setCoords(origin);
     } catch {
       setError({
         kind: "location",
@@ -90,11 +107,7 @@ export default function HospitalListContent() {
     }
 
     try {
-      const data = await lookupHospitals({
-        lat: coords.lat,
-        lng: coords.lng,
-        radius: SEARCH_RADIUS_M,
-      });
+      const data = await lookupHospitals({ ...origin, radius: SEARCH_RADIUS_M, page: 1 });
 
       if (data.error) {
         setError({ kind: data.error, message: data.message });
@@ -102,6 +115,8 @@ export default function HospitalListContent() {
       }
 
       setHospitals(data.hospitals ?? []);
+      setPage(1);
+      setHasMore(Boolean(data.hasMore));
     } catch {
       setError({
         kind: "network",
@@ -111,6 +126,38 @@ export default function HospitalListContent() {
       setLoading(false);
     }
   }, []);
+
+  const loadMore = useCallback(async () => {
+    if (!coords || loadingMore) return;
+
+    setLoadingMore(true);
+    const nextPage = page + 1;
+
+    try {
+      const data = await lookupHospitals({
+        ...coords,
+        radius: SEARCH_RADIUS_M,
+        page: nextPage,
+      });
+
+      if (data.error) {
+        setHasMore(false);
+        return;
+      }
+
+      // 같은 병원이 페이지 경계에서 중복돼 오는 경우를 막는다.
+      setHospitals((prev) => {
+        const seen = new Set(prev.map((h) => h.id));
+        return [...prev, ...(data.hospitals ?? []).filter((h) => !seen.has(h.id))];
+      });
+      setPage(nextPage);
+      setHasMore(Boolean(data.hasMore));
+    } catch {
+      setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [coords, page, loadingMore]);
 
   useEffect(() => {
     load();
@@ -209,6 +256,26 @@ export default function HospitalListContent() {
               </li>
             ))}
           </ul>
+
+          {hasMore && (
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-2xl border border-gray-200 bg-white py-3.5 text-sm font-bold text-gray-700 transition active:scale-[0.99] active:bg-gray-50 disabled:text-gray-400"
+            >
+              {loadingMore ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                  불러오는 중...
+                </>
+              ) : (
+                <>
+                  <ChevronDown size={16} aria-hidden="true" />더 보기
+                </>
+              )}
+            </button>
+          )}
         </>
       )}
 

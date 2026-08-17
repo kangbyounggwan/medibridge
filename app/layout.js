@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AppBar from "@/components/AppBar";
+import BackButtonHandler from "@/components/BackButtonHandler";
 import TabBar from "@/components/TabBar";
 
 const geistSans = Geist({
@@ -53,6 +54,7 @@ export default function RootLayout({ children }) {
         </footer>
 
         <TabBar />
+        <BackButtonHandler />
       </body>
     </html>
   );
