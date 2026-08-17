@@ -19,40 +19,22 @@ export async function POST(request) {
       );
     }
 
-    // 언어별 명시적 프롬프트 생성
-    const getLanguageSpecificPrompt = (symptoms, language) => {
-      let languageInstruction = "";
-      let userMessage = symptoms;
-
-      switch (language) {
-        case "Korean":
-          languageInstruction =
-            "You MUST respond ONLY in Korean (한국어). Do not use any other language.";
-          userMessage = `다음 증상에 대해 한국어로만 의료 상담을 해주세요: "${symptoms}"`;
-          break;
-        case "Chinese":
-          languageInstruction =
-            "You MUST respond ONLY in Chinese (中文). Do not use any other language.";
-          userMessage = `请仅用中文为以下症状提供医疗咨询: "${symptoms}"`;
-          break;
-        case "Japanese":
-          languageInstruction =
-            "You MUST respond ONLY in Japanese (日本語). Do not use any other language.";
-          userMessage = `次の症状について日本語でのみ医療相談をしてください: "${symptoms}"`;
-          break;
-        default:
-          languageInstruction =
-            "You MUST respond ONLY in English. Do not use any other language.";
-          userMessage = `Please provide medical consultation in English only for the following symptoms: "${symptoms}"`;
-      }
-
-      return { languageInstruction, userMessage };
+    // 앱에서 고른 언어 코드(ko/en/zh/vi/th/ja/id/ar)로 답하게 한다.
+    // 모델이 한국어로 흘러가는 일이 잦아 지시를 명시적으로 준다.
+    const LANGUAGES = {
+      ko: { name: "Korean (한국어)", ask: "다음 증상에 대해 한국어로만 의료 상담을 해주세요" },
+      en: { name: "English", ask: "Please provide medical consultation in English only for the following symptoms" },
+      zh: { name: "Chinese (中文)", ask: "请仅用中文为以下症状提供医疗咨询" },
+      vi: { name: "Vietnamese (Tiếng Việt)", ask: "Vui lòng tư vấn y tế chỉ bằng tiếng Việt cho các triệu chứng sau" },
+      th: { name: "Thai (ไทย)", ask: "โปรดให้คำปรึกษาทางการแพทย์เป็นภาษาไทยเท่านั้นสำหรับอาการต่อไปนี้" },
+      ja: { name: "Japanese (日本語)", ask: "次の症状について日本語でのみ医療相談をしてください" },
+      id: { name: "Indonesian (Bahasa Indonesia)", ask: "Harap berikan konsultasi medis hanya dalam bahasa Indonesia untuk gejala berikut" },
+      ar: { name: "Arabic (العربية)", ask: "يرجى تقديم استشارة طبية باللغة العربية فقط للأعراض التالية" },
     };
 
-    const { languageInstruction, userMessage } = getLanguageSpecificPrompt(
-      symptoms,
-      language
-    );
+    const picked = LANGUAGES[language] ?? LANGUAGES.en;
+    const languageInstruction = `You MUST respond ONLY in ${picked.name}. Do not use any other language.`;
+    const userMessage = `${picked.ask}: "${symptoms}"`;
 
     console.log("입력된 증상:", symptoms);
     console.log("감지된 언어:", language);

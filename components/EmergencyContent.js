@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { formatDistance } from "@/lib/geo";
+import { useT } from "@/lib/i18n";
 import {
   DEFAULT_RADIUS_M,
   EmergencyLookupError,
@@ -60,6 +61,7 @@ async function lookupEmergencyRooms({ lat, lng, radius, page }) {
 }
 
 export default function EmergencyContent() {
+  const t = useT();
   const [rooms, setRooms] = useState([]);
   const [coords, setCoords] = useState(null);
   const [page, setPage] = useState(1);
@@ -86,10 +88,7 @@ export default function EmergencyContent() {
       };
       setCoords(origin);
     } catch {
-      setError({
-        kind: "location",
-        message: "위치를 확인할 수 없습니다. 위치 권한을 허용해주세요.",
-      });
+      setError({ kind: "location" });
       setLoading(false);
       return;
     }
@@ -110,10 +109,7 @@ export default function EmergencyContent() {
       setPage(1);
       setHasMore(Boolean(data.hasMore));
     } catch {
-      setError({
-        kind: "network",
-        message: "응급실 정보를 가져오지 못했습니다. 연결을 확인해주세요.",
-      });
+      setError({ kind: "network" });
     } finally {
       setLoading(false);
     }
@@ -169,15 +165,15 @@ export default function EmergencyContent() {
           <Siren size={26} aria-hidden="true" />
         </span>
         <span>
-          <span className="block text-lg font-bold">119 전화하기</span>
+          <span className="block text-lg font-bold">{t("emergency.callTitle")}</span>
           <span className="mt-0.5 block text-sm text-red-50">
-            생명이 위급하면 먼저 신고하세요
+            {t("emergency.callDesc")}
           </span>
         </span>
       </a>
 
       <h2 className="mt-6 mb-3 text-sm font-bold text-gray-800">
-        가까운 응급실
+        {t("emergency.nearby")}
       </h2>
 
       {loading && <LoadingState />}
@@ -191,7 +187,10 @@ export default function EmergencyContent() {
       {!loading && !error && rooms.length > 0 && (
         <>
           <p className="mb-3 text-sm text-gray-500">
-            반경 {DEFAULT_RADIUS_M / 1000}km 내 {rooms.length}곳
+            {t("emergency.count", {
+              km: DEFAULT_RADIUS_M / 1000,
+              count: rooms.length,
+            })}
           </p>
 
           <ul className="flex flex-col gap-3">
@@ -247,11 +246,12 @@ export default function EmergencyContent() {
               {loadingMore ? (
                 <>
                   <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-                  불러오는 중...
+                  {t("common.loadingMore")}
                 </>
               ) : (
                 <>
-                  <ChevronDown size={16} aria-hidden="true" />더 보기
+                  <ChevronDown size={16} aria-hidden="true" />
+                  {t("common.loadMore")}
                 </>
               )}
             </button>
@@ -260,11 +260,13 @@ export default function EmergencyContent() {
       )}
 
       <div className="mt-6 rounded-xl border border-yellow-200 bg-yellow-50 p-4">
-        <h3 className="mb-1.5 text-sm font-bold text-yellow-800">안내사항</h3>
+        <h3 className="mb-1.5 text-sm font-bold text-yellow-800">
+          {t("common.noticeTitle")}
+        </h3>
         <ul className="list-inside list-disc text-sm text-yellow-800">
-          <li>가용 병상은 실시간으로 달라질 수 있습니다.</li>
-          <li>이동 전 응급실에 전화로 확인하는 것이 안전합니다.</li>
-          <li>의식이 없거나 출혈이 심하면 이동하지 말고 119에 신고하세요.</li>
+          <li>{t("emergency.notice1")}</li>
+          <li>{t("emergency.notice2")}</li>
+          <li>{t("emergency.notice3")}</li>
         </ul>
       </div>
     </div>
@@ -272,16 +274,24 @@ export default function EmergencyContent() {
 }
 
 function LoadingState() {
+  const t = useT();
   return (
     <div className="flex min-h-[30vh] flex-col items-center justify-center gap-4 text-center">
       <div className="h-11 w-11 animate-spin rounded-full border-4 border-gray-200 border-t-red-500" />
-      <p className="text-sm text-gray-500">가까운 응급실을 찾는 중...</p>
+      <p className="text-sm text-gray-500">{t("emergency.loading")}</p>
     </div>
   );
 }
 
+const ERROR_KEYS = {
+  location: "emergency.locationError",
+  network: "emergency.networkError",
+};
+
 function ErrorState({ error, onRetry }) {
+  const t = useT();
   const pending = error.kind === "not_approved" || error.kind === "not_configured";
+  const message = error.message ?? t(ERROR_KEYS[error.kind] ?? "emergency.networkError");
 
   return (
     <div className="flex min-h-[30vh] flex-col items-center justify-center gap-3 px-6 text-center">
@@ -292,15 +302,11 @@ function ErrorState({ error, onRetry }) {
       )}
 
       <p className="text-sm text-gray-600">
-        {error.message ?? "응급실 정보를 가져오지 못했습니다."}
+        {message}
       </p>
 
       {pending ? (
-        <p className="text-xs text-gray-400">
-          승인이 완료되면 자동으로 목록이 표시됩니다.
-          <br />
-          그전까지는 위의 119 신고를 이용해주세요.
-        </p>
+        <p className="text-xs text-gray-400">{t("emergency.pendingHint")}</p>
       ) : (
         <button
           type="button"
@@ -308,7 +314,7 @@ function ErrorState({ error, onRetry }) {
           className="mt-1 inline-flex items-center gap-1.5 rounded-xl bg-red-500 px-5 py-2.5 text-sm font-semibold text-white active:scale-[0.99]"
         >
           <RefreshCw size={15} aria-hidden="true" />
-          다시 시도
+          {t("common.retry")}
         </button>
       )}
     </div>
@@ -316,11 +322,12 @@ function ErrorState({ error, onRetry }) {
 }
 
 function EmptyState({ radius, onRetry }) {
+  const t = useT();
   return (
     <div className="flex min-h-[30vh] flex-col items-center justify-center gap-3 px-6 text-center">
       <MapPin size={36} className="text-gray-300" aria-hidden="true" />
       <p className="text-sm text-gray-600">
-        반경 {radius / 1000}km 안에 응급의료기관이 없습니다.
+        {t("emergency.empty", { km: radius / 1000 })}
       </p>
       <button
         type="button"
@@ -328,7 +335,7 @@ function EmptyState({ radius, onRetry }) {
         className="mt-1 inline-flex items-center gap-1.5 rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-700 active:scale-[0.99]"
       >
         <RefreshCw size={15} aria-hidden="true" />
-        다시 찾기
+        {t("emergency.refind")}
       </button>
     </div>
   );

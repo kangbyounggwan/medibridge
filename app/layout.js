@@ -3,6 +3,7 @@ import "./globals.css";
 import AppBar from "@/components/AppBar";
 import BackButtonHandler from "@/components/BackButtonHandler";
 import TabBar from "@/components/TabBar";
+import { LocaleProvider } from "@/lib/i18n";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,28 +34,30 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex min-h-screen flex-col bg-white`}
       >
-        <AppBar />
+        <LocaleProvider>
+          <AppBar />
 
-        {/* 모바일에서는 하단 탭바에 가리지 않도록 그만큼 비워둔다. */}
-        <main className="flex-1 pb-[calc(var(--tabbar-h)+var(--safe-bottom))] md:pb-0">
-          {children}
-        </main>
+          {/* 모바일에서는 하단 탭바에 가리지 않도록 그만큼 비워둔다. */}
+          <main className="flex-1 pb-[calc(var(--tabbar-h)+var(--safe-bottom))] md:pb-0">
+            {children}
+          </main>
 
-        {/* 웹 푸터. 앱에서는 탭바가 그 역할을 하므로 데스크톱에서만 보인다. */}
-        <footer className="hidden border-t border-gray-300 md:block">
-          <div className="mx-auto max-w-7xl px-6 py-6 text-center text-sm text-gray-500">
-            <p className="mb-1">
-              © 2025 AI Medical Consultation Service | MEDIBRIDGE
-            </p>
-            <p className="text-xs text-gray-400">
-              🌍 Multi-language support: Korean, English, Chinese, Japanese, and
-              more
-            </p>
-          </div>
-        </footer>
+          {/* 웹 푸터. 앱에서는 탭바가 그 역할을 하므로 데스크톱에서만 보인다. */}
+          <footer className="hidden border-t border-gray-300 md:block">
+            <div className="mx-auto max-w-7xl px-6 py-6 text-center text-sm text-gray-500">
+              <p className="mb-1">
+                © 2025 AI Medical Consultation Service | MEDIBRIDGE
+              </p>
+              <p className="text-xs text-gray-400">
+                🌍 Korean · English · 中文 · Tiếng Việt · ไทย · 日本語 · Bahasa
+                Indonesia · العربية
+              </p>
+            </div>
+          </footer>
 
-        <TabBar />
-        <BackButtonHandler />
+          <TabBar />
+          <BackButtonHandler />
+        </LocaleProvider>
       </body>
     </html>
   );

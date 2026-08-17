@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { formatDistance } from "@/lib/geo";
+import { useT } from "@/lib/i18n";
 import { HospitalLookupError, fetchHospitals } from "@/lib/hospitals";
 
 const SEARCH_RADIUS_M = 2000;
@@ -60,6 +61,7 @@ async function lookupHospitals({ lat, lng, radius, page }) {
 export default function HospitalListContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const t = useT();
 
   const [symptoms, setSymptoms] = useState("");
   const [aiResponse, setAiResponse] = useState("");
@@ -98,10 +100,7 @@ export default function HospitalListContent() {
       };
       setCoords(origin);
     } catch {
-      setError({
-        kind: "location",
-        message: "위치를 확인할 수 없습니다. 위치 권한을 허용해주세요.",
-      });
+      setError({ kind: "location" });
       setLoading(false);
       return;
     }
@@ -118,10 +117,7 @@ export default function HospitalListContent() {
       setPage(1);
       setHasMore(Boolean(data.hasMore));
     } catch {
-      setError({
-        kind: "network",
-        message: "병원 정보를 가져오지 못했습니다. 연결을 확인해주세요.",
-      });
+      setError({ kind: "network" });
     } finally {
       setLoading(false);
     }
@@ -181,7 +177,7 @@ export default function HospitalListContent() {
       {symptoms && (
         <div className="mb-5 rounded-xl bg-gray-100 p-4">
           <h2 className="mb-1 text-sm font-semibold text-gray-700">
-            상담받은 증상
+            {t("hospitals.symptomsTitle")}
           </h2>
           <p className="text-sm text-gray-500">{symptoms}</p>
         </div>
@@ -198,7 +194,10 @@ export default function HospitalListContent() {
       {!loading && !error && hospitals.length > 0 && (
         <>
           <p className="mb-3 text-sm font-semibold text-green-600">
-            반경 {SEARCH_RADIUS_M / 1000}km 내 {hospitals.length}곳
+            {t("hospitals.count", {
+              km: SEARCH_RADIUS_M / 1000,
+              count: hospitals.length,
+            })}
           </p>
 
           <ul className="flex flex-col gap-3">
@@ -267,11 +266,12 @@ export default function HospitalListContent() {
               {loadingMore ? (
                 <>
                   <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-                  불러오는 중...
+                  {t("common.loadingMore")}
                 </>
               ) : (
                 <>
-                  <ChevronDown size={16} aria-hidden="true" />더 보기
+                  <ChevronDown size={16} aria-hidden="true" />
+                  {t("common.loadMore")}
                 </>
               )}
             </button>
@@ -280,11 +280,13 @@ export default function HospitalListContent() {
       )}
 
       <div className="mt-6 rounded-xl border border-yellow-200 bg-yellow-50 p-4">
-        <h3 className="mb-1.5 text-sm font-bold text-yellow-800">안내사항</h3>
+        <h3 className="mb-1.5 text-sm font-bold text-yellow-800">
+          {t("common.noticeTitle")}
+        </h3>
         <ul className="list-inside list-disc text-sm text-yellow-800">
-          <li>병원 정보는 실시간으로 변경될 수 있습니다.</li>
-          <li>진료 시간 및 예약 가능 여부를 미리 확인하세요.</li>
-          <li>응급상황 시에는 119에 신고하세요.</li>
+          <li>{t("hospitals.notice1")}</li>
+          <li>{t("hospitals.notice2")}</li>
+          <li>{t("hospitals.notice3")}</li>
         </ul>
       </div>
     </div>
@@ -292,20 +294,29 @@ export default function HospitalListContent() {
 }
 
 function LoadingState() {
+  const t = useT();
   return (
     <div className="flex min-h-[45vh] flex-col items-center justify-center gap-4 text-center">
       <div className="h-11 w-11 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500" />
-      <p className="text-sm text-gray-500">주변 병원을 찾는 중...</p>
+      <p className="text-sm text-gray-500">{t("hospitals.loading")}</p>
     </div>
   );
 }
 
+const ERROR_KEYS = {
+  location: "hospitals.locationError",
+  network: "hospitals.networkError",
+};
+
 function ErrorState({ error, onRetry }) {
+  const t = useT();
+  // 서버가 준 문구가 있으면 그대로 쓰고, 없으면 종류에 맞는 번역을 찾는다.
+  const message = error.message ?? t(ERROR_KEYS[error.kind] ?? "hospitals.networkError");
   return (
     <div className="flex min-h-[45vh] flex-col items-center justify-center gap-3 px-6 text-center">
       <AlertCircle size={36} className="text-gray-300" aria-hidden="true" />
       <p className="text-sm text-gray-600">
-        {error.message ?? "병원 정보를 가져오지 못했습니다."}
+        {message}
       </p>
       <button
         type="button"
@@ -313,18 +324,19 @@ function ErrorState({ error, onRetry }) {
         className="mt-1 inline-flex items-center gap-1.5 rounded-xl bg-blue-500 px-5 py-2.5 text-sm font-semibold text-white active:scale-[0.99]"
       >
         <RefreshCw size={15} aria-hidden="true" />
-        다시 시도
+        {t("common.retry")}
       </button>
     </div>
   );
 }
 
 function EmptyState({ radius, onRetry }) {
+  const t = useT();
   return (
     <div className="flex min-h-[45vh] flex-col items-center justify-center gap-3 px-6 text-center">
       <MapPin size={36} className="text-gray-300" aria-hidden="true" />
       <p className="text-sm text-gray-600">
-        반경 {radius / 1000}km 안에 등록된 병원이 없습니다.
+        {t("hospitals.empty", { km: radius / 1000 })}
       </p>
       <button
         type="button"
@@ -332,7 +344,7 @@ function EmptyState({ radius, onRetry }) {
         className="mt-1 inline-flex items-center gap-1.5 rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-700 active:scale-[0.99]"
       >
         <RefreshCw size={15} aria-hidden="true" />
-        다시 찾기
+        {t("hospitals.refind")}
       </button>
     </div>
   );

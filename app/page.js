@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, Building2, Hospital, Siren, Stethoscope } from "lucide-react";
 import mainImg from "@/public/service_sample.png";
+import { useT } from "@/lib/i18n";
 
 const fadeUp = {
   initial: { opacity: 0, y: 16 },
@@ -12,6 +13,8 @@ const fadeUp = {
 };
 
 export default function Home() {
+  const t = useT();
+
   return (
     <div className="mx-auto w-full max-w-4xl px-5 pt-6 pb-10 md:px-6 md:pt-12">
       {/* 타이틀 */}
@@ -21,13 +24,13 @@ export default function Home() {
         className="md:text-center"
       >
         <h2 className="text-2xl font-extrabold leading-snug text-gray-800 md:text-5xl">
-          한국거주 외국인들을 위한
+          {t("home.heroA")}
           <br />
-          <span className="text-blue-500">AI 병원</span> 연결 플랫폼
+          <span className="text-blue-500">{t("home.heroHighlight")}</span>{" "}
+          {t("home.heroB")}
         </h2>
         <p className="mt-2 text-sm text-gray-500 md:mt-4 md:text-xl">
-          AI-based Hospital Linking Platform for Foreigners in Korea,{" "}
-          <span className="font-semibold text-green-500">MediBridge</span>
+          {t("home.subtitle")}
         </p>
       </motion.div>
 
@@ -45,12 +48,12 @@ export default function Home() {
             <Stethoscope size={26} aria-hidden="true" />
           </span>
           <span className="flex-1 md:flex-none">
-            <span className="block text-lg font-bold">AI 상담 시작하기</span>
+            <span className="block text-lg font-bold">{t("home.consultTitle")}</span>
             <span className="mt-0.5 block text-sm text-blue-50">
-              증상을 입력하면 AI가 안내해 드려요
+              {t("home.consultDesc")}
             </span>
           </span>
-          <ArrowRight size={20} aria-hidden="true" className="shrink-0" />
+          <ArrowRight size={20} aria-hidden="true" className="shrink-0 rtl:rotate-180" />
         </Link>
       </motion.div>
 
@@ -67,9 +70,9 @@ export default function Home() {
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50 text-green-600">
             <Hospital size={22} aria-hidden="true" />
           </span>
-          <span className="mt-3 block font-bold text-gray-800">병원 찾기</span>
+          <span className="mt-3 block font-bold text-gray-800">{t("home.hospitalTitle")}</span>
           <span className="mt-0.5 block text-xs text-gray-500">
-            내 주변 병원 목록
+            {t("home.hospitalDesc")}
           </span>
         </Link>
 
@@ -80,9 +83,9 @@ export default function Home() {
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600">
             <Siren size={22} aria-hidden="true" />
           </span>
-          <span className="mt-3 block font-bold text-gray-800">응급실</span>
+          <span className="mt-3 block font-bold text-gray-800">{t("home.emergencyTitle")}</span>
           <span className="mt-0.5 block text-xs text-gray-500">
-            지금 갈 수 있는 곳
+            {t("home.emergencyDesc")}
           </span>
         </Link>
       </motion.div>
@@ -114,13 +117,17 @@ export default function Home() {
           </span>
           <span className="flex-1">
             <span className="block text-sm font-bold text-gray-800">
-              병원을 운영하시나요?
+              {t("home.clinicTitle")}
             </span>
             <span className="mt-0.5 block text-xs text-gray-500">
-              병원 등록하고 월간 리포트 받아보기
+              {t("home.clinicDesc")}
             </span>
           </span>
-          <ArrowRight size={16} aria-hidden="true" className="shrink-0 text-gray-400" />
+          <ArrowRight
+            size={16}
+            aria-hidden="true"
+            className="shrink-0 text-gray-400 rtl:rotate-180"
+          />
         </Link>
       </motion.div>
     </div>

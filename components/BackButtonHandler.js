@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
+import { useT } from "@/lib/i18n";
 import { isClinicRoute } from "@/lib/mode";
 
 // 각 모드의 시작 화면. 여기서 뒤로가기를 또 누르면 앱을 종료한다.
@@ -24,6 +25,7 @@ export default function BackButtonHandler() {
   const router = useRouter();
   const pathname = usePathname();
   const [exitHint, setExitHint] = useState(false);
+  const t = useT();
 
   // 리스너를 매번 새로 붙이지 않도록 최신 경로만 ref로 넘긴다.
   const pathnameRef = useRef(pathname);
@@ -82,7 +84,7 @@ export default function BackButtonHandler() {
       style={{ bottom: "calc(var(--tabbar-h) + var(--safe-bottom) + 1rem)" }}
     >
       <span className="rounded-full bg-gray-900/85 px-4 py-2.5 text-sm font-medium text-white">
-        한 번 더 누르면 앱이 종료됩니다
+        {t("exitHint")}
       </span>
     </div>
   );

@@ -5,12 +5,14 @@ import { useSearchParams } from "next/navigation";
 import icoKakao from "@/public/ico-kakao.png";
 import Image from "next/image";
 import { Send } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 
 export default function HospitalChatContent() {
   const searchParams = useSearchParams();
+  const t = useT();
   const [hospitalId, setHospitalId] = useState(null);
   const [hospitalName, setHospitalName] = useState("");
   const [hospitalType, setHospitalType] = useState("");
@@ -79,26 +81,28 @@ export default function HospitalChatContent() {
   useEffect(() => {
     if (!hospitalId) return;
 
-    const lines = [`안녕하세요! ${currentHospital.name}입니다.`];
+    const lines = [t("hospitalChat.greeting", { name: currentHospital.name })];
 
     if (currentHospital.specialties.length > 0) {
       lines.push(
-        `저희는 ${currentHospital.specialties.join(", ")} 분야를 전문으로 하고 있습니다.`
+        t("hospitalChat.specialties", {
+          list: currentHospital.specialties.join(", "),
+        })
       );
     } else if (currentHospital.type) {
-      lines.push(`저희는 ${currentHospital.type}입니다.`);
+      lines.push(t("hospitalChat.typeIs", { type: currentHospital.type }));
     }
 
     if (currentHospital.doctor) {
-      lines.push(`${currentHospital.doctor}이 진료를 담당하고 있습니다.`);
+      lines.push(t("hospitalChat.doctor", { doctor: currentHospital.doctor }));
     }
     if (currentHospital.workingHours) {
-      lines.push(`진료시간: ${currentHospital.workingHours}`);
+      lines.push(t("hospitalChat.hours", { hours: currentHospital.workingHours }));
     }
     if (symptoms) {
-      lines.push(`AI 상담을 통해 "${symptoms}" 증상으로 방문해주시는군요.`);
+      lines.push(t("hospitalChat.symptomNote", { symptoms }));
     }
-    lines.push("궁금한 점이 있으시면 언제든 문의해주세요!");
+    lines.push(t("hospitalChat.askAnything"));
 
     const welcomeMessage = {
       type: "hospital",
@@ -109,7 +113,7 @@ export default function HospitalChatContent() {
     setMessages([welcomeMessage]);
     // currentHospital은 아래 값들에서 파생되므로 이 넷이 실제 의존성이다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hospitalId, hospitalName, hospitalType, symptoms]);
+  }, [hospitalId, hospitalName, hospitalType, symptoms, t]);
 
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return;
@@ -133,7 +137,7 @@ export default function HospitalChatContent() {
         type: "hospital",
         content: responseKey
           ? faqResponses[responseKey]
-          : "죄송합니다. 해당 질문에 대한 답변은 준비되어 있지 않습니다.",
+          : t("hospitalChat.fallback"),
         timestamp: new Date(),
       };
 
@@ -150,7 +154,7 @@ export default function HospitalChatContent() {
   if (!hospitalId) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center px-6 text-center text-sm text-gray-500">
-        병원 정보를 불러오는 중입니다...
+        {t("hospitalChat.loadingHospital")}
       </div>
     );
   }
@@ -231,7 +235,7 @@ export default function HospitalChatContent() {
               onClick={() => setShowReservationUI(true)}
               className="rounded-xl bg-blue-500 px-5 py-2.5 text-sm font-bold text-white active:scale-[0.99]"
             >
-              네, 예약할게요
+              {t("hospitalChat.reserve")}
             </button>
           </div>
         )}
@@ -240,11 +244,11 @@ export default function HospitalChatContent() {
           <div className="mt-4 flex justify-center">
             <button
               type="button"
-              onClick={() => alert("카톡 알림이 설정되었습니다!")}
+              onClick={() => alert(t("hospitalChat.kakaoDone"))}
               className="flex items-center gap-1.5 rounded-xl bg-[#fee500] px-5 py-2.5 text-sm font-bold text-black active:scale-[0.99]"
             >
               <Image src={icoKakao} width={18} height={18} alt="" aria-hidden="true" />
-              카톡으로 알림받기
+              {t("hospitalChat.kakao")}
             </button>
           </div>
         )}
@@ -262,14 +266,14 @@ export default function HospitalChatContent() {
           type="text"
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
-          placeholder="궁금한 점을 입력해주세요..."
-          aria-label="메시지 입력"
+          placeholder={t("hospitalChat.placeholder")}
+          aria-label={t("hospitalChat.inputLabel")}
           className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         />
         <button
           type="submit"
           disabled={loading || !inputMessage.trim()}
-          aria-label="전송"
+          aria-label={t("hospitalChat.send")}
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white transition ${
             loading || !inputMessage.trim()
               ? "bg-gray-300"
@@ -285,13 +289,13 @@ export default function HospitalChatContent() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6">
             <h3 className="text-center text-base font-bold text-gray-800">
-              예약 선택
+              {t("hospitalChat.reserveTitle")}
             </h3>
 
             <div className="mt-4">
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <DateTimePicker
-                  label="날짜와 시간을 선택하세요"
+                  label={t("hospitalChat.datetime")}
                   value={selectedDate}
                   onChange={(newValue) => setSelectedDate(newValue)}
                   minDate={new Date()}
@@ -316,7 +320,7 @@ export default function HospitalChatContent() {
                 }}
                 className="flex-1 rounded-xl border border-gray-200 py-3 text-sm font-bold text-gray-700"
               >
-                취소
+                {t("hospitalChat.cancel")}
               </button>
               <button
                 type="button"
@@ -329,7 +333,7 @@ export default function HospitalChatContent() {
                   selectedDate ? "bg-blue-500" : "bg-gray-300"
                 }`}
               >
-                예약 완료
+                {t("hospitalChat.confirm")}
               </button>
             </div>
           </div>

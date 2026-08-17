@@ -10,18 +10,19 @@ import {
   Siren,
   Stethoscope,
 } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import { isClinicRoute } from "@/lib/mode";
 
 const PATIENT_TABS = [
-  { href: "/", label: "홈", Icon: Home },
-  { href: "/chat", label: "AI 상담", Icon: Stethoscope },
+  { href: "/", key: "nav.home", Icon: Home },
+  { href: "/chat", key: "nav.consult", Icon: Stethoscope },
   {
     href: "/hospitalList",
-    label: "병원",
+    key: "nav.hospitals",
     Icon: Hospital,
     also: ["/hospitalChat"],
   },
-  { href: "/emergency", label: "응급실", Icon: Siren },
+  { href: "/emergency", key: "nav.emergency", Icon: Siren },
 ];
 
 const CLINIC_TABS = [
@@ -31,6 +32,7 @@ const CLINIC_TABS = [
 
 export default function TabBar() {
   const pathname = usePathname();
+  const t = useT();
   const clinic = isClinicRoute(pathname);
   const tabs = clinic ? CLINIC_TABS : PATIENT_TABS;
 
@@ -38,10 +40,10 @@ export default function TabBar() {
     <nav
       className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white md:hidden"
       style={{ paddingBottom: "var(--safe-bottom)" }}
-      aria-label={clinic ? "병원 서비스" : "주요 화면"}
+      aria-label={clinic ? "병원 서비스" : t("nav.home")}
     >
       <ul className="flex h-[var(--tabbar-h)] items-stretch">
-        {tabs.map(({ href, label, Icon, also = [] }) => {
+        {tabs.map(({ href, label, key, Icon, also = [] }) => {
           const active = pathname === href || also.includes(pathname);
 
           return (
@@ -63,7 +65,7 @@ export default function TabBar() {
                     active ? "font-bold" : "font-medium"
                   }`}
                 >
-                  {label}
+                  {key ? t(key) : label}
                 </span>
               </Link>
             </li>
