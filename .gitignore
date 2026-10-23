@@ -43,3 +43,20 @@ next-env.d.ts
 
 # Claude Code 로컬 권한 캐시(세션별 경로 포함)
 .claude/settings.local.json
+
+# Play Store 업로드 서명 키. 분실하면 앱 업데이트가 불가능하므로
+# 저장소가 아닌 별도 안전한 곳(비밀 보관소)에 백업해 둘 것.
+/android/keystore.properties
+/android/*.jks
+/android/*.keystore
+
+# 서명된 빌드 산출물. 소스에서 재생성되므로 GitHub Releases로만 배포한다.
+/docs/release/*.aab
+/docs/release/*.apk
+
+# 계약 문서(단가·사업자 정보 포함). 저장소가 공개 상태이므로 추적하지 않는다.
+/docs/MediBridge_견적서.*
+/docs/MediBridge_비교견적서.*
+/docs/MediBridge_과업지시서.*
+/docs/MediBridge_완료보고서.*
+/docs/report/

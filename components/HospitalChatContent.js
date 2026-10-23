@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import icoKakao from "@/public/ico-kakao.png";
 import Image from "next/image";
@@ -16,6 +16,7 @@ export default function HospitalChatContent() {
   const [hospitalId, setHospitalId] = useState(null);
   const [hospitalName, setHospitalName] = useState("");
   const [hospitalType, setHospitalType] = useState("");
+  const [hospitalHours, setHospitalHours] = useState("");
   const [symptoms, setSymptoms] = useState("");
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -30,6 +31,7 @@ export default function HospitalChatContent() {
     setHospitalId(searchParams.get("hospitalId"));
     setHospitalName(searchParams.get("hospitalName") || "");
     setHospitalType(searchParams.get("hospitalType") || "");
+    setHospitalHours(searchParams.get("hospitalHours") || "");
     setSymptoms(searchParams.get("symptoms") || "");
   }, [searchParams]);
 
@@ -63,7 +65,7 @@ export default function HospitalChatContent() {
     type: hospitalType || "",
     doctor: demo?.doctor ?? null,
     specialties: demo?.specialties ?? [],
-    workingHours: demo?.workingHours ?? null,
+    workingHours: hospitalHours || demo?.workingHours || null,
   };
 
   // FAQ 응답
@@ -113,7 +115,7 @@ export default function HospitalChatContent() {
     setMessages([welcomeMessage]);
     // currentHospital은 아래 값들에서 파생되므로 이 넷이 실제 의존성이다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hospitalId, hospitalName, hospitalType, symptoms, t]);
+  }, [hospitalId, hospitalName, hospitalType, hospitalHours, symptoms, t]);
 
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return;
@@ -147,7 +149,14 @@ export default function HospitalChatContent() {
   };
 
 
-  const formatTime = (date) =>
+  const bottomRef = useRef(null);
+
+  // 예약 카드가 대화 흐름 안에 들어가므로, 새 내용이 화면 밖에 생기지 않게 맞춰준다.
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, loading, showReservationUI, showKakaoButton]);
+
+  const formatTime = (date) =
     date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 
   // 실제 심평원 병원은 위 데모 테이블에 없으므로 id만 있으면 화면을 그린다.
@@ -159,7 +168,10 @@ export default function HospitalChatContent() {
     );
   }
 
-  const subtitle = [currentHospital.type, currentHospital.doctor]
+  const subtitle = [
+    currentHospital.type,
+    currentHospital.workingHours || currentHospital.doctor,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -240,6 +252,55 @@ export default function HospitalChatContent() {
           </div>
         )}
 
+        {showReservationUI && (
+          <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4">
+            <h3 className="text-center text-sm font-bold text-gray-800">
+              {t("hospitalChat.reserveTitle")}
+            </h3>
+
+            <div className="mt-3">
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <DateTimePicker
+                  label={t("hospitalChat.datetime")}
+                  value={selectedDate}
+                  onChange={(newValue) => setSelectedDate(newValue)}
+                  minDate={new Date()}
+                  format="yyyy/MM/dd hh:mm a"
+                  slotProps={{
+                    textField: { fullWidth: true, variant: "outlined", size: "small" },
+                  }}
+                />
+              </LocalizationProvider>
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReservationUI(false);
+                  setSelectedDate(null);
+                }}
+                className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-bold text-gray-700 active:bg-gray-50"
+              >
+                {t("hospitalChat.cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReservationUI(false);
+                  setShowKakaoButton(true);
+                }}
+                disabled={!selectedDate}
+                className={`flex-1 rounded-xl py-2.5 text-sm font-bold text-white ${
+                  selectedDate ? "bg-blue-500 active:scale-[0.99]" : "bg-gray-300"
+                }`}
+              >
+                {t("hospitalChat.confirm")}
+              </button>
+            </div>
+          </div>
+        )}
+
         {showKakaoButton && (
           <div className="mt-4 flex justify-center">
             <button
@@ -252,6 +313,8 @@ export default function HospitalChatContent() {
             </button>
           </div>
         )}
+
+        <div ref={bottomRef} />
       </div>
 
       {/* 입력 */}
@@ -284,61 +347,6 @@ export default function HospitalChatContent() {
         </button>
       </form>
 
-      {/* 예약 */}
-      {showReservationUI && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6">
-            <h3 className="text-center text-base font-bold text-gray-800">
-              {t("hospitalChat.reserveTitle")}
-            </h3>
-
-            <div className="mt-4">
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DateTimePicker
-                  label={t("hospitalChat.datetime")}
-                  value={selectedDate}
-                  onChange={(newValue) => setSelectedDate(newValue)}
-                  minDate={new Date()}
-                  format="yyyy/MM/dd hh:mm a"
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      variant: "outlined",
-                      size: "small",
-                    },
-                  }}
-                />
-              </LocalizationProvider>
-            </div>
-
-            <div className="mt-5 flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowReservationUI(false);
-                  setSelectedDate(null);
-                }}
-                className="flex-1 rounded-xl border border-gray-200 py-3 text-sm font-bold text-gray-700"
-              >
-                {t("hospitalChat.cancel")}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowReservationUI(false);
-                  setShowKakaoButton(true);
-                }}
-                disabled={!selectedDate}
-                className={`flex-1 rounded-xl py-3 text-sm font-bold text-white ${
-                  selectedDate ? "bg-blue-500" : "bg-gray-300"
-                }`}
-              >
-                {t("hospitalChat.confirm")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

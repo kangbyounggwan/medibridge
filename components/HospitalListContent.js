@@ -165,6 +165,7 @@ export default function HospitalListContent() {
       hospitalName: hospital.name,
       hospitalType: hospital.type,
       hospitalPhone: hospital.phone ?? "",
+      hospitalHours: hospital.dutyHours ?? "",
       symptoms,
       aiResponse,
     });
