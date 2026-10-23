@@ -156,7 +156,7 @@ export default function HospitalChatContent() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, loading, showReservationUI, showKakaoButton]);
 
-  const formatTime = (date) =
+  const formatTime = (date) =>
     date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 
   // 실제 심평원 병원은 위 데모 테이블에 없으므로 id만 있으면 화면을 그린다.
